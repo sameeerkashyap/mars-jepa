@@ -1,0 +1,40 @@
+# Stage A: CPU-only Job that synthesises the training trajectories once and
+# writes them to the shared PVC. Run this before the training Job.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: marsworld-generate-data
+  labels:
+    app: marsworld
+    stage: data
+spec:
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: marsworld
+        stage: data
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: generate
+          image: your-registry/marsworld:latest   # <-- replace
+          command: ["python", "scripts/generate_data.py"]
+          args: ["--config", "configs/default.yaml"]
+          env:
+            - name: MARSWORLD_LOGLEVEL
+              value: INFO
+          resources:
+            requests:
+              cpu: "2"
+              memory: 2Gi
+            limits:
+              cpu: "4"
+              memory: 4Gi
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: marsworld-data

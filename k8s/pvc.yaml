@@ -1,0 +1,15 @@
+# Persistent storage shared between the data-generation Job and the training
+# Job, and used to retain checkpoints beyond pod lifetime.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: marsworld-data
+  labels:
+    app: marsworld
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  # storageClassName: standard   # uncomment/set to your cluster's class

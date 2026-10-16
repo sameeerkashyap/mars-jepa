@@ -1,0 +1,5 @@
+# Core runtime dependencies. For GPU training inside Kubernetes, install the
+# CUDA build of torch via the image's base layer (see k8s/Dockerfile).
+numpy>=1.23
+torch>=2.0
+pyyaml>=6.0

@@ -1,0 +1,54 @@
+# Stage B: GPU training Job. Reads trajectories from the shared PVC and writes
+# checkpoints back to it. Request a GPU via the nvidia.com/gpu resource.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: marsworld-train
+  labels:
+    app: marsworld
+    stage: train
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        app: marsworld
+        stage: train
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: train
+          image: your-registry/marsworld:latest   # <-- replace
+          command: ["python", "scripts/train.py"]
+          args: ["--config", "configs/default.yaml", "--auto-generate"]
+          env:
+            - name: MARSWORLD_LOGLEVEL
+              value: INFO
+          resources:
+            requests:
+              cpu: "4"
+              memory: 8Gi
+              nvidia.com/gpu: "1"
+            limits:
+              cpu: "8"
+              memory: 16Gi
+              nvidia.com/gpu: "1"
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+            - name: checkpoints
+              mountPath: /app/checkpoints
+      # Schedule onto a GPU node pool; adjust to your cluster labels.
+      # nodeSelector:
+      #   cloud.google.com/gke-accelerator: nvidia-tesla-t4
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: marsworld-data
+        - name: checkpoints
+          persistentVolumeClaim:
+            claimName: marsworld-data

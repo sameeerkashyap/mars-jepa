@@ -1,0 +1,54 @@
+site_name: MarsWorld PI-JEPA
+site_description: Physics-Informed JEPA world model for Martian climate dynamics
+repo_url: ""
+docs_dir: docs
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - toc.integrate
+  palette:
+    - scheme: slate
+      primary: deep orange
+      accent: amber
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            show_source: true
+            show_root_heading: true
+            docstring_style: numpy
+            members_order: source
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.arithmatex:
+      generic: true
+  - toc:
+      permalink: true
+
+extra_javascript:
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+
+nav:
+  - Home: index.md
+  - Architecture: architecture.md
+  - Components:
+      - Configuration: components/config.md
+      - Data & Solver: components/data.md
+      - Models: components/models.md
+      - Physics: components/physics.md
+      - Training: components/training.md
+      - Utilities: components/utils.md
+  - Guides:
+      - Training: training.md
+      - Kubernetes: kubernetes.md

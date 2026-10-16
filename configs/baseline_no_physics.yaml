@@ -1,0 +1,15 @@
+# Ablation: model B (JEPA latent predictor, no physics regularisation).
+# Inherits structure from default.yaml; only differences are meaningful.
+
+data:
+  parameter: temperature
+  grid_size: 32
+  n_trajectories: 256
+  trajectory_length: 24
+
+physics:
+  enabled: false               # disables PDE + conservation losses
+
+train:
+  epochs: 50
+  checkpoint_dir: checkpoints/baseline_no_physics
