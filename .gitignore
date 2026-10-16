@@ -21,3 +21,6 @@ site/
 .DS_Store
 .idea/
 .vscode/
+
+# pytest
+.pytest_cache/
