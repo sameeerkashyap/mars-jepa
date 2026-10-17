@@ -11,6 +11,8 @@ from __future__ import annotations
 import torch
 import torch.nn as nn
 
+from marsworld.models.encoder import _group_norm
+
 
 class ConvDecoder(nn.Module):
     """Upsampling CNN mapping a latent vector back to a field.
@@ -29,18 +31,24 @@ class ConvDecoder(nn.Module):
 
     def __init__(self, out_channels: int, hidden_channels: int, latent_dim: int, out_size: int):
         super().__init__()
+        if out_size % 8 != 0:
+            raise ValueError(
+                f"out_size={out_size} must be divisible by 8 (the encoder "
+                "downsamples by 2 three times). Previously this silently "
+                "produced a mismatched output resolution."
+            )
         c = hidden_channels
         self.out_size = out_size
         self.start = out_size // 8
         self.fc = nn.Linear(latent_dim, 4 * c * self.start * self.start)
         self.net = nn.Sequential(
-            nn.GroupNorm(8, 4 * c),
+            _group_norm(4 * c),
             nn.SiLU(),
             nn.ConvTranspose2d(4 * c, 2 * c, 4, stride=2, padding=1),  # x2
-            nn.GroupNorm(8, 2 * c),
+            _group_norm(2 * c),
             nn.SiLU(),
             nn.ConvTranspose2d(2 * c, c, 4, stride=2, padding=1),      # x4
-            nn.GroupNorm(8, c),
+            _group_norm(c),
             nn.SiLU(),
             nn.ConvTranspose2d(c, out_channels, 4, stride=2, padding=1),  # x8
         )

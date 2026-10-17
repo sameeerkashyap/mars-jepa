@@ -48,7 +48,7 @@ def main() -> None:
         logger.info("dataset missing; auto-generating -> %s", npz_path)
         data = generate_dataset(
             cfg.data.n_trajectories, cfg.data.trajectory_length, cfg.data.grid_size,
-            cfg.data.dt, cfg.data.diffusivity, cfg.data.seed,
+            cfg.data.dt, cfg.data.diffusivity, cfg.data.seed, cfg.data.substeps,
         )
         save_dataset(data, npz_path)
 

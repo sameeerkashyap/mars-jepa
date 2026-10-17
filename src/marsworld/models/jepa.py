@@ -77,7 +77,21 @@ class PIJEPA(nn.Module):
         return self.predictor(z, forcing)
 
     def decode(self, z: torch.Tensor) -> torch.Tensor:
-        """Decode a latent back to an interpretable physical field."""
+        """Decode a latent to a raw field (or field *increment* in residual mode)."""
+        return self.decoder(z)
+
+    def decode_field(self, z: torch.Tensor, x_base: torch.Tensor) -> torch.Tensor:
+        """Produce the predicted next field from a latent.
+
+        In residual mode (``cfg.predict_residual``), the decoder predicts the
+        *change* and the next field is ``x_base + decode(z)``. This makes the
+        trivial "do nothing" solution (decode -> 0) exactly equal to the
+        persistence baseline ``x_{t+1} = x_t``, so the model can only improve on
+        it instead of being swamped by absolute-reconstruction error. For small
+        time steps this is essential for the model to beat persistence.
+        """
+        if self.cfg.predict_residual:
+            return x_base + self.decoder(z)
         return self.decoder(z)
 
     def forward(self, x_t: torch.Tensor, x_next: torch.Tensor, forcing: torch.Tensor) -> JEPAOutput:
@@ -85,7 +99,7 @@ class PIJEPA(nn.Module):
         z_context = self.encode(x_t)
         z_pred = self.predict_latent(z_context, forcing)
         z_target = self.encode_target(x_next)
-        x_pred = self.decode(z_pred)
+        x_pred = self.decode_field(z_pred, x_t)
         return JEPAOutput(z_context=z_context, z_pred=z_pred, z_target=z_target, x_pred=x_pred)
 
     # --- EMA update --------------------------------------------------------

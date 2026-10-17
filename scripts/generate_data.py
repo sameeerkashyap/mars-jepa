@@ -40,6 +40,7 @@ def main() -> None:
         dt=cfg.data.dt,
         diffusivity=cfg.data.diffusivity,
         seed=cfg.data.seed,
+        substeps=cfg.data.substeps,
     )
 
     out = Path(cfg.data.data_dir) / f"{cfg.data.parameter}.npz"

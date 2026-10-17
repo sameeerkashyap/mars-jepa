@@ -8,8 +8,21 @@ EMA-updated *target* encoder (see :class:`marsworld.models.jepa.PIJEPA`).
 
 from __future__ import annotations
 
+import math
+
 import torch
 import torch.nn as nn
+
+
+def _group_norm(channels: int, max_groups: int = 8) -> nn.GroupNorm:
+    """GroupNorm whose group count always divides ``channels``.
+
+    Using ``gcd(channels, max_groups)`` avoids the silent constraint that
+    ``channels`` be a multiple of 8 (which previously crashed for e.g.
+    ``hidden_channels=12``).
+    """
+    groups = math.gcd(channels, max_groups) or 1
+    return nn.GroupNorm(groups, channels)
 
 
 class ConvEncoder(nn.Module):
@@ -30,13 +43,13 @@ class ConvEncoder(nn.Module):
         c = hidden_channels
         self.features = nn.Sequential(
             nn.Conv2d(in_channels, c, 3, stride=2, padding=1),  # H/2
-            nn.GroupNorm(8, c),
+            _group_norm(c),
             nn.SiLU(),
             nn.Conv2d(c, 2 * c, 3, stride=2, padding=1),        # H/4
-            nn.GroupNorm(8, 2 * c),
+            _group_norm(2 * c),
             nn.SiLU(),
             nn.Conv2d(2 * c, 4 * c, 3, stride=2, padding=1),    # H/8
-            nn.GroupNorm(8, 4 * c),
+            _group_norm(4 * c),
             nn.SiLU(),
         )
         self.pool = nn.AdaptiveAvgPool2d(1)

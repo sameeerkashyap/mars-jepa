@@ -77,10 +77,16 @@ class Trainer:
             x_next_true = target[:, step]
             z_pred = self.model.predict_latent(z, forcing)
             z_target = self.model.encode_target(x_next_true)
-            x_pred = self.model.decode(z_pred)
+            # Residual-aware decode: next field is x_prev + decode(z) in
+            # residual mode, so the loss is measured against persistence.
+            x_pred = self.model.decode_field(z_pred, x_prev)
             out = JEPAOutput(z_context=z, z_pred=z_pred, z_target=z_target, x_pred=x_pred)
 
             terms = self.loss_fn(out, x_prev, x_next_true)
+            # Persistence-relative skill: forecast MSE vs the x_next:=x_prev baseline.
+            with torch.no_grad():
+                persist = torch.nn.functional.mse_loss(x_prev, x_next_true)
+                accum["persistence_mse"] = accum.get("persistence_mse", 0.0) + persist
             for k, v in terms.items():
                 accum[k] = accum.get(k, 0.0) + v
 

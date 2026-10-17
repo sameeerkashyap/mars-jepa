@@ -8,6 +8,7 @@ data:
   n_trajectories: 256
   trajectory_length: 24
   dt: 0.1
+  substeps: 8                  # solver steps per stored frame (bigger => harder task)
   diffusivity: 0.15
   seed: 0
   data_dir: data
@@ -29,6 +30,7 @@ physics:
   conservation_weight: 0.05
   diffusivity: 0.15            # must match data.diffusivity for a valid residual
   dt: 0.1
+  substeps: 8                  # must match data.substeps (effective dt = dt*substeps)
 
 train:
   epochs: 50

@@ -40,6 +40,12 @@ class DataConfig:
         Number of time steps per trajectory (including the initial state).
     dt:
         Solver time step (dimensionless / normalised units).
+    substeps:
+        Number of solver integration steps taken between two *stored* frames.
+        Increasing this enlarges the per-frame change so the task is not
+        dominated by persistence (``x_{t+1} ~= x_t``), making the forecasting
+        benchmark meaningful. Does not affect numerical stability (each internal
+        step still uses ``dt``).
     diffusivity:
         Base thermal diffusivity used by the solver.
     seed:
@@ -58,6 +64,7 @@ class DataConfig:
     n_trajectories: int = 256
     trajectory_length: int = 24
     dt: float = 0.1
+    substeps: int = 8
     diffusivity: float = 0.15
     seed: int = 0
     data_dir: str = "data"
@@ -84,6 +91,10 @@ class ModelConfig:
         Hidden width of the latent dynamics predictor MLP.
     ema_decay:
         Momentum used to update the target encoder (stop-gradient EMA).
+    predict_residual:
+        If True, the decoder predicts the field *increment* and the next field is
+        ``x_t + decode(z)``. This makes "do nothing" equal to persistence and is
+        essential for small time steps (see audit notes). Default True.
     """
 
     in_channels: int = 1
@@ -92,6 +103,7 @@ class ModelConfig:
     forcing_dim: int = 2
     predictor_hidden: int = 256
     ema_decay: float = 0.996
+    predict_residual: bool = True
 
 
 @dataclass
@@ -108,6 +120,13 @@ class PhysicsConfig:
     conservation_weight: float = 0.05
     diffusivity: float = 0.15
     dt: float = 0.1
+    substeps: int = 8  # must match DataConfig.substeps so the residual uses the
+    #                    true frame spacing (effective dt = dt * substeps)
+
+    @property
+    def frame_dt(self) -> float:
+        """Effective time between two stored frames."""
+        return self.dt * max(1, self.substeps)
 
 
 @dataclass

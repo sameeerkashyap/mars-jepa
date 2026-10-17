@@ -54,7 +54,7 @@ class CompositeLoss:
             pde = pde_residual_loss(
                 x_t, out.x_pred,
                 diffusivity=self.physics_cfg.diffusivity,
-                dt=self.physics_cfg.dt,
+                dt=self.physics_cfg.frame_dt,  # effective spacing between frames
             )
             cons = mass_conservation_loss(x_t, out.x_pred)
             total = total + self.physics_cfg.pde_weight * pde

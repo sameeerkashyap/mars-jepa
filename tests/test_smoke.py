@@ -83,6 +83,44 @@ def test_ema_target_update_changes_target_encoder():
     assert not torch.equal(before, after)
 
 
+def test_decoder_rejects_non_multiple_of_8():
+    from marsworld.models.decoder import ConvDecoder
+
+    with pytest.raises(ValueError):
+        ConvDecoder(1, 16, 32, out_size=20)  # silent-shape-bug regression guard
+    # valid sizes construct fine
+    ConvDecoder(1, 16, 32, out_size=24)
+
+
+@pytest.mark.parametrize("hidden", [6, 8, 12, 16, 32])
+def test_groupnorm_handles_any_channel_width(hidden):
+    from marsworld.models.encoder import ConvEncoder
+
+    enc = ConvEncoder(1, hidden, 32)
+    out = enc(torch.randn(1, 1, 32, 32))  # must not raise regardless of width
+    assert out.shape == (1, 32)
+
+
+def test_residual_mode_defaults_to_persistence():
+    # With a zero-residual decoder output, residual mode must equal persistence.
+    cfg = ModelConfig(hidden_channels=8, latent_dim=16, predictor_hidden=32)
+    assert cfg.predict_residual is True
+    model = PIJEPA(cfg, grid_size=GRID)
+    x = torch.randn(2, 1, GRID, GRID)
+    z = torch.zeros(2, 16)
+    # force decoder output to zero so decode_field == x (persistence)
+    with torch.no_grad():
+        for p in model.decoder.parameters():
+            p.zero_()
+    out = model.decode_field(z, x)
+    assert torch.allclose(out, x, atol=1e-6)
+
+
+def test_physics_frame_dt_scales_with_substeps():
+    pc = PhysicsConfig(dt=0.1, substeps=8)
+    assert abs(pc.frame_dt - 0.8) < 1e-9
+
+
 def test_single_training_step_reduces_or_runs():
     cfg = Config(
         data=DataConfig(grid_size=GRID),

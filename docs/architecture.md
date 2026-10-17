@@ -46,6 +46,58 @@ latents back into fields lets us compute PDE residuals and conservation
 diagnostics directly, rather than imposing constraints on arbitrary latent
 coordinates.
 
+## Why residual prediction (and why it matters)
+
+The decoder predicts the field **increment**, not the absolute field:
+
+$$ \hat x_{t+1} = x_t + \text{decode}(\hat z_{t+1}). $$
+
+This is controlled by `model.predict_residual` (default `True`). The reason is
+empirical and important: for small time steps the frame-to-frame change is tiny,
+so the **persistence baseline** $x_{t+1} := x_t$ is extremely strong. If the
+model predicts the absolute field, its reconstruction-error floor exceeds the
+actual change and it *loses to doing nothing*. In residual mode, a zero decoder
+output is exactly persistence, so the model can only improve on it.
+
+## Task difficulty: `data.substeps`
+
+The solver takes `substeps` internal steps per **stored** frame. Larger values
+enlarge the per-frame change, weakening the persistence baseline and giving the
+model real dynamics to learn. The physics residual automatically uses the
+effective spacing `frame_dt = dt * substeps`.
+
+## Validation & audit
+
+The core was audited empirically (see repo history). Headline results:
+
+| Check | Result |
+| --- | --- |
+| Gradient flow / target-encoder freeze | all params receive grad; target frozen |
+| Representation collapse | none (latent std stable, 100% dims active) |
+| Autoencoder capacity | normalized recon MSE ~0.001 on diffusion fields |
+| Beats persistence baseline | **yes** — skill grows with difficulty |
+
+Persistence skill $1 - \text{MSE}_{\text{model}}/\text{MSE}_{\text{persistence}}$
+(2000-step controlled run):
+
+| `substeps` | skill |
+| --- | --- |
+| 1 (near-degenerate) | +0.04 |
+| 8 (default) | +0.44 |
+| 16 (harder) | +0.62 |
+
+That skill **increases** with task difficulty is the key signal: the model has
+learned dynamics, not merely learned to echo its input. `persistence_mse` is
+logged every epoch so this can be tracked during training.
+
+!!! warning "Constraints enforced by the code"
+    - `grid_size` must be divisible by 8 (encoder downsamples ×2 three times;
+      the decoder now raises instead of silently resizing).
+    - Any `hidden_channels` width works (GroupNorm groups = `gcd(channels, 8)`).
+    - The global-pool bottleneck is adequate for *smooth* diffusion fields but
+      would lose high-frequency detail (e.g. sharp dust fronts); a spatial /
+      U-Net latent is the recommended upgrade for that regime.
+
 ## Extending to new parameters
 
 The pipeline is parameter-agnostic. To add **dust transport**:
