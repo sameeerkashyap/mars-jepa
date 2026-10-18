@@ -1,0 +1,9 @@
+# Phase-2 (ML) dependencies.  Checkpoint-A's requirements.txt is intentionally
+# restricted to the simulator deps; the brief additionally permits torch + pandas.
+numpy>=1.24,<3
+scipy>=1.10,<2
+PyYAML>=6.0,<7
+matplotlib>=3.7,<4
+pandas>=1.5,<3
+pytest>=7.0,<9
+torch>=2.1

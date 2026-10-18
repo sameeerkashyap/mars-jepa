@@ -1,0 +1,32 @@
+# Hypothesis thresholds for the PREREG analysis.  THE REVIEWER FILLS THESE.
+# Every field is intentionally BLANK (YAML null).  analyze.py reports any
+# hypothesis whose threshold is blank as "inconclusive (threshold unset)".
+# No example values are given here on purpose.
+#
+# Headline OOD metric per PREREG.md section 6: Tier-2 S-pole polar-winter
+# intervention-response RMSE (results.csv column t2_resp_S).
+
+# H1: an OOD gap exists for pure data-driven models.
+#   supported if  mean(Tier-2 metric) / mean(Tier-1 metric)  >=  h1_ratio
+#   over the pure-data arms (gru/rssm/transformer, physics=off) at the largest
+#   data fraction.
+h1_ratio:
+h1_metric:                # t2_resp_S | t2_resp_N | t2_resp_global
+
+# H2: incomplete physics helps extrapolation.
+#   supported if the relative OOD-error reduction of (h2_arch, h2_variant) vs
+#   (h2_arch, physics=off) on the headline metric >= h2_rel_reduction, at the
+#   largest data fraction, with at least h2_min_seeds dataset seeds.
+h2_rel_reduction:
+h2_arch:                  # gru | rssm | transformer
+h2_min_seeds:
+h2_variant:               # A (strict) | B (collocation)
+
+# H3: physics improves data efficiency and/or the hybrid wins OOD.
+#   (a) data efficiency: smallest fraction at which (h3_arch, physics=A) reaches
+#       the error of (h3_arch, off) at the largest fraction is
+#       <= h3_frac_ratio * largest fraction
+#   (b) hybrid: mean headline metric of hybrid <= h3_hybrid_margin * best pure arm
+h3_frac_ratio:
+h3_hybrid_margin:
+h3_arch:                  # gru | rssm | transformer

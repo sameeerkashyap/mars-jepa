@@ -1,0 +1,91 @@
+# =====================================================================
+# Phase-2 (ML) configuration for the Mars 1-D climate pilot.
+#
+# Checkpoint-A physics parameters remain in config.yaml (frozen).  This file
+# holds ONLY the ML / protocol hyperparameters.  Everything here is documented
+# in docs/README_phase2.md.  Thresholds for the PREREG hypotheses live separately in
+# thresholds.yaml (filled by the reviewer).
+# =====================================================================
+
+# ---- open-loop protocol (observe K steps, roll out H steps) ----
+protocol:
+  K: 40            # context length (stored steps = sols, output_every_sol=1)
+  H: 120           # open-loop rollout horizon (sols)
+  stride: 20       # window stride when slicing training trajectories
+
+# ---- data families / splits ----
+data:
+  data_dir: data
+  family: main
+  train_split: train
+  val_split: val
+
+# ---- normalization (statistics come from TRAIN split ONLY) ----
+# (no tunables; mean/std computed at train time and cached in the run dir)
+
+# ---- shared model / training budget ----
+train:
+  device: auto             # auto | cpu | mps | cuda
+  batch_size: 32
+  epochs: 20               # full-budget epochs (smoke overrides)
+  lr: 1.0e-3
+  weight_decay: 0.0
+  grad_clip: 1.0
+  param_budget: 60000      # target trainable params for neural arms (+/-10%)
+
+# ---- physics-residual loss ----
+physics:
+  residual_scale: 10.0     # fixed W/m^2 scale the residual is divided by
+                           # (order of the forcing knob X=5; documented)
+  frost_tol_K: 2.0         # cells within this band of T_frost are masked
+  lambda_grid: [0.01, 0.1, 1.0]   # lambda candidates (selected on VAL only)
+  lambda_default: 0.1
+  collocation:             # Variant B collocation settings
+    fa_max: 10.0           # unlabeled forcings sampled up to F_a = 10
+    n_rollouts: 8
+    horizon: 120
+
+# ---- architecture hyperparameters (sized to match param_budget +/-10%) ----
+# counts (n_cell=64): gru 69744, rssm 65184, transformer 71168, hybrid 67104
+# -> max/min = 1.092 (within the required 10%).  linear/ebm_only are baselines,
+#    exempt from matching (see docs/README_phase2.md).
+arch:
+  gru:
+    hidden: 90
+    decoder_hidden: 64
+  rssm:
+    deter: 72              # deterministic h_t size
+    stoch: 16              # stochastic z_t size
+    hidden: 64
+    kl_balance: 0.8        # KL balancing weight toward the prior
+    free_bits: 1.0         # nats of free bits per step
+    kl_weight: 1.0
+  transformer:
+    d_model: 64
+    n_heads: 4
+    n_layers: 2
+    ff: 96
+  hybrid:
+    g_hidden: 160          # g_theta correction MLP width (sized up to match budget)
+    g_layers: 2
+    m_ref: 1.0             # sentinel ice mass (kg/m^2) assigned to inferred-pinned
+                           # cells when initializing the EBM ice state from the
+                           # OBSERVED context (never from hidden m)
+    frost_init_band_K: 0.5 # a context cell is "pinned" if T_s_last <= T_frost+band
+  linear:
+    ar_order: 4            # ARX autoregressive order on T_s
+  ensemble:
+    n_members: 5
+
+# ---- stochastic evaluation / calibration ----
+calibration:
+  n_samples: 30            # samples for stochastic models (CRPS, coverage)
+  ensemble_members: 5      # samples for the GRU ensemble
+  interval: 0.9            # central interval for coverage
+
+# ---- sweep grid (sweep.py; I run it myself) ----
+sweep:
+  arms: [gru, rssm, transformer, hybrid, linear, ebm_only, gru_ensemble]
+  physics: ["off", "A", "B"]   # quoted: YAML would read bare off as boolean False
+  fractions: [0.1, 0.3, 1.0]
+  seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]

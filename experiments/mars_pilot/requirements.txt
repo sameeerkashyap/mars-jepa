@@ -1,0 +1,7 @@
+# Mars 1-D climate pilot -- dependencies (pinned to major versions in use).
+# Only numpy, scipy, pyyaml, matplotlib, pytest are permitted by the brief.
+numpy>=1.24,<3
+scipy>=1.10,<2
+PyYAML>=6.0,<7
+matplotlib>=3.7,<4
+pytest>=7.0,<9

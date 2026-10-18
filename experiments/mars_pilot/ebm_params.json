@@ -1,0 +1,11 @@
+{
+  "C_eff": 496603.4263371117,
+  "D": 0.0998511806083785,
+  "eps": 0.9499724537603896,
+  "A_bare": 0.25,
+  "A_ice": 0.6,
+  "L": 590000.0,
+  "T_frost": 147.73994380796418,
+  "fit_rms_wm2": 0.4609805994512803,
+  "_note": "Fitted once by sim_ebm.fit_ebm on the unforced mismatch_scale=0 truth run (see README.md). Cached so training/eval do not re-run the truth simulator. Regenerate with: python3 -c 'from sim_ebm import fit_ebm; from sim_truth import run_truth; from common import load_config; c=load_config(); import json; p,r=fit_ebm(c, run_truth(c,F_a=0.0,seed=0,years=3,mismatch_scale=0.0)); print(json.dumps(p))'"
+}
