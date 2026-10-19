@@ -26,7 +26,7 @@ pip install -r requirements_phase2.txt   # numpy scipy pyyaml matplotlib pandas 
 ```
 python3 -m pytest tests/ -q
 ```
-Expected: `50 passed` (dataio + Checkpoint-A + split tests, Phase-2 tests, the
+Expected: `74 passed` (dataio + Checkpoint-A + split tests, Phase-2 tests, the
 end-to-end `tests/test_integration.py` on 4 tiny trajectories generated through
 `gen_data.py`, and a structure-only `diag_tier2.py` check; ~90 s on CPU). The Phase-2 tests cover: no hidden leakage, eval labels never imported by
 train/models, train-only normalization, param counts within 10%, physics residual
@@ -88,7 +88,9 @@ Fill `thresholds.yaml` first (H1/H2/H3 criteria). Then:
 python3 analyze.py --results results.csv --thresholds thresholds.yaml
 ```
 Expected: prints the H1/H2/H3 verdicts (supported / not supported / inconclusive),
-writes `analysis_report.{json,md}` and figures into `figures_phase2/`:
+writes `analysis_report.{json,md}` (incl. a descriptive table of each
+configuration's Tier-2 `t2_polar_winter_S_pinned` error next to LINEAR and
+HYBRID, mean + per seed, no thresholds) and figures into `figures_phase2/`:
 `headline_ood_vs_fraction.png`, `rollout_vs_horizon.png`, `calibration.png`.
 
 ## 5b. Tier-2 response diagnostic (I run this myself)
@@ -105,7 +107,8 @@ python3 eval.py --run runs/gru_off_f100_s0 --out runs/gru_off_f100_s0/eval.json
 python3 eval.py --run runs/ens_m0 --run runs/ens_m1 ... --ensemble
 ```
 Expected: prints Tier-1 and Tier-2 metrics separately (intervention-response
-RMSE polar N/S + global, rollout-vs-horizon, "EBM-residual constraint
+RMSE `polar_winter_{N,S}` and `polar_winter_{N,S}_pinned` with
+window/cell-step counts, + global, rollout-vs-horizon, "EBM-residual constraint
 satisfaction (also the training objective for physics arms)", and
 calibration for stochastic/ensemble models).
 

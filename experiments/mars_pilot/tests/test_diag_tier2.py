@@ -27,3 +27,22 @@ def test_diag_tier2_tiny(monkeypatch):
     assert set(tab["8.0"]) == {"N", "S"}
     for v in tab["8.0"].values():
         assert v is None or {"signal_K", "seed_std_K", "SN", "n_seeds"} <= set(v)
+
+
+def test_diag_tier2_counts_seeds_without_pinned_cells():
+    """frac_unpinned must not silently drop seeds with no control-pinned cell."""
+    def p(fr):
+        r = {"winter_mean_response_K": 1.0, "winter_peak_response_K": 2.0,
+             "frac_ctrl_pinned_unpinned_forced": fr}
+        return {"by_A": {"8.0": {"N": r, "S": r}}}
+    tab = diag_tier2.summarize([p(1.0), p(0.5), p(float("nan"))], [8.0])
+    v = tab["8.0"]["N"]
+    assert v["n_seeds"] == 3 and v["frac_unpinned_n_seeds"] == 2
+    assert v["n_seeds_no_ctrl_pinned"] == 1
+    assert v["frac_unpinned"] == 0.75 and v["frac_unpinned_min"] == 0.5
+
+
+def test_diag_tier2_uses_metric_defs():
+    import metric_defs
+    assert diag_tier2.polar_bands is metric_defs.polar_bands
+    assert diag_tier2.winter_steps is metric_defs.winter_steps

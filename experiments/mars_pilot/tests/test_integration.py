@@ -119,8 +119,16 @@ def _check_eval(path):
     for tier in ev["tiers"].values():
         assert tier["n_windows"] >= 1
         ir = tier["intervention_response_rmse"]
-        assert all(math.isfinite(ir[k]) for k in ("polar_N", "polar_S",
-                                                   "global_mean"))
+        cnt = tier["intervention_response_counts"]
+        assert math.isfinite(ir["global_mean"])
+        # polar metrics are winter-only (PREREG D6): the 0.3-yr scratch record
+        # may hold no winter step, so finite <=> >= 1 contributing window.
+        for k in ("polar_winter_N", "polar_winter_S", "polar_winter_N_pinned",
+                  "polar_winter_S_pinned"):
+            n = cnt[k]["n_windows"]
+            assert 0 <= n <= cnt["n_windows_total"]
+            assert math.isfinite(ir[k]) == (n > 0)
+            assert (cnt[k]["n_cell_steps"] > 0) == (n > 0)
         assert np.all(np.isfinite(tier["rollout_rmse_vs_horizon"]))
         assert math.isfinite(tier["energy_budget_violation_mean"])
         assert tier["energy_budget_violation_label"].startswith(

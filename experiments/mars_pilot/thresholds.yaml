@@ -4,14 +4,17 @@
 # No example values are given here on purpose.
 #
 # Headline OOD metric per PREREG.md section 6: Tier-2 S-pole polar-winter
-# intervention-response RMSE (results.csv column t2_resp_S).
+# intervention-response RMSE (results.csv column t2_polar_winter_S).
+# PREREG D7 names the S control-pinned variant (t2_polar_winter_S_pinned) as the
+# primary metric for H1/H2; analyze.py also reports it descriptively vs LINEAR
+# and HYBRID (no thresholds).
 
 # H1: an OOD gap exists for pure data-driven models.
 #   supported if  mean(Tier-2 metric) / mean(Tier-1 metric)  >=  h1_ratio
 #   over the pure-data arms (gru/rssm/transformer, physics=off) at the largest
 #   data fraction.
 h1_ratio:
-h1_metric:                # t2_resp_S | t2_resp_N | t2_resp_global
+h1_metric:                # t2_polar_winter_S_pinned | t2_polar_winter_S | t2_polar_winter_N | t2_resp_global
 
 # H2: incomplete physics helps extrapolation.
 #   supported if the relative OOD-error reduction of (h2_arch, h2_variant) vs

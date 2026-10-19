@@ -158,7 +158,13 @@ Reported **Tier 1 and Tier 2 separately**:
    eval label; future `F_a=0`). Predicted response `T_a − T_0` vs true
    `response_T_s`. Primary: polar-winter `T_s`, `|lat|>60°`, **N and S reported
    separately** (S-pole Tier-2 is the headline per PREREG §6). Secondary:
-   global-mean (area-weighted).
+   global-mean (area-weighted). Keys `polar_winter_{N,S}` (winter steps only)
+   and `polar_winter_{N,S}_pinned` (only cells whose true control `T_s` ≤
+   T_frost + 0.5 K; a window counts only if it has ≥ 1 such winter cell); PREREG
+   D7 primary = Tier-2 `polar_winter_S_pinned`. `results.csv` has, per tier and
+   metric, `t{1,2}_<key>`, `_n_windows`, `_n_cell_steps`. (These were `polar_N`
+   / `polar_S` / `t{1,2}_resp_{N,S}`; renamed so they cannot be confused with
+   the earlier all-step version, PREREG D6.)
 2. **Rollout error vs horizon** (forced global-mean RMSE per horizon step).
 3. **Calibration** (stochastic models + ensemble): 30 samples (5 for the
    ensemble) → CRPS, 90%-interval coverage, Spearman(spread, OOD distance) where
@@ -170,7 +176,7 @@ Reported **Tier 1 and Tier 2 separately**:
    terms are present, a truth-referenced closure could also be computed; the
    reported model-side violation avoids pulling hidden arrays into the headline.
 
-## 8. Tests (all pass: `50 passed`, incl. `tests/test_integration.py` on real generated data)
+## 8. Tests (all pass: `74 passed`, incl. `tests/test_integration.py` on real generated data)
 
 The 17 Phase-2 tests enforce every item the brief listed: no hidden leakage; eval
 labels never imported by `train.py` or `models/`; train-only normalization;

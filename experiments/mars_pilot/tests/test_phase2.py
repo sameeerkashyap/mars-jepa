@@ -292,7 +292,7 @@ def test_thresholds_blank_and_ebm_metric_labeled(tmp_path):
              "(also the training objective for physics arms)")
     assert analyze.EBM_METRIC_LABEL == label == evalmod.EBM_METRIC_LABEL
     rows = [dict(tag=f"{a}_{p}_{s}", arm=a, physics=p, fraction=1.0, seed=s,
-                 status="ok", t1_resp_S=1.0, t2_resp_S=2.0,
+                 status="ok", t1_polar_winter_S=1.0, t2_polar_winter_S=2.0,
                  t1_ebm_viol=0.1, t2_ebm_viol=0.2)
             for a in ("gru", "hybrid") for p in ("off", "A") for s in (0, 1)]
     csv = tmp_path / "r.csv"

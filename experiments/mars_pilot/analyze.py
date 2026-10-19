@@ -7,7 +7,11 @@ Outputs (into figures_phase2/ and analysis_report.{json,md}):
   * rollout error vs horizon (from per-run runs/<tag>/eval.json when present);
   * calibration plot (coverage_90 and CRPS per configuration);
   * a table evaluating H1/H2/H3 against thresholds.yaml, each labeled
-    supported / not supported / inconclusive.
+    supported / not supported / inconclusive;
+  * a DESCRIPTIVE table (no thresholds, no verdicts) of each configuration's
+    primary-metric error (PREREG D7: Tier-2 S control-pinned polar winter,
+    column t2_polar_winter_S_pinned) next to the LINEAR and HYBRID baselines,
+    mean and per-seed, per data fraction.
 
 Designed to run on FAKE results (see tests) as well as the real sweep output.
 """
@@ -29,6 +33,8 @@ import matplotlib.pyplot as plt
 FIGDIR = "figures_phase2"
 EBM_METRIC_LABEL = ("EBM-residual constraint satisfaction (also the training objective for physics arms)")
 PURE_ARMS = ["gru", "rssm", "transformer"]
+PRIMARY_METRIC = "t2_polar_winter_S_pinned"          # PREREG D7
+BASELINE_CONFIGS = ("linear/off", "hybrid/off")
 
 
 def _config_label(row):
@@ -38,10 +44,8 @@ def _config_label(row):
 def load_results(path):
     df = pd.read_csv(path)
     df = df[df.get("status", "ok") == "ok"].copy()
-    for c in ["fraction", "seed", "t1_resp_S", "t2_resp_S", "t1_resp_N",
-              "t2_resp_N", "t1_resp_global", "t2_resp_global", "t2_crps",
-              "t2_cov90", "t2_spread_ood_rho", "t1_ebm_viol", "t2_ebm_viol"]:
-        if c in df:
+    for c in df.columns:
+        if c.startswith(("t1_", "t2_")) or c in ("fraction", "seed"):
             df[c] = pd.to_numeric(df[c], errors="coerce")
     df["config"] = df.apply(_config_label, axis=1)
     return df
@@ -60,7 +64,7 @@ def bootstrap_ci(vals, n_boot=2000, alpha=0.05, seed=0):
             float(np.percentile(means, 100 * (1 - alpha / 2))))
 
 
-def headline_figure(df, metric="t2_resp_S", out=None):
+def headline_figure(df, metric="t2_polar_winter_S", out=None):
     os.makedirs(FIGDIR, exist_ok=True)
     fig, ax = plt.subplots(figsize=(7, 5))
     for cfg, g in df.groupby("config"):
@@ -150,7 +154,7 @@ def _mean_metric(df, arm, physics, fraction, metric):
 def evaluate_hypotheses(df, thr):
     out = {}
     maxf = df["fraction"].max()
-    metric = thr.get("h1_metric") or "t2_resp_S"
+    metric = thr.get("h1_metric") or "t2_polar_winter_S"
     t1_metric = metric.replace("t2_", "t1_")
 
     # H1
@@ -232,11 +236,48 @@ def ebm_metric_table(df):
     return {"label": EBM_METRIC_LABEL, "by_config": rows}
 
 
+def _seed_values(df, config, fraction, metric):
+    """{seed: value} for one configuration at one data fraction (NaN kept)."""
+    g = df[(df["config"] == config) & np.isclose(df["fraction"], fraction)]
+    return {int(sd): float(v) for sd, v in zip(g["seed"], g[metric])}
+
+
+def _summ(per_seed):
+    v = np.array([x for x in per_seed.values() if np.isfinite(x)], float)
+    return {"mean": float(v.mean()) if v.size else None,
+            "n_seeds_finite": int(v.size), "per_seed": per_seed}
+
+
+def primary_vs_baselines(df, metric=PRIMARY_METRIC,
+                         baselines=BASELINE_CONFIGS):
+    """Descriptive only: per (configuration, fraction), the metric's mean and
+    per-seed values next to each baseline's at the same fraction.  No
+    thresholds, no verdicts."""
+    rows = []
+    if metric not in df:
+        return {"metric": metric, "baselines": list(baselines), "rows": rows}
+    for frac in sorted(df["fraction"].unique()):
+        base = {b: _summ(_seed_values(df, b, frac, metric)) for b in baselines}
+        for cfg in sorted(df[np.isclose(df["fraction"], frac)]["config"].unique()):
+            rows.append({"config": cfg, "fraction": float(frac),
+                         "arm": _summ(_seed_values(df, cfg, frac, metric)),
+                         "baselines": base})
+    return {"metric": metric, "baselines": list(baselines), "rows": rows}
+
+
+def _fmt(x):
+    return "n/a" if x is None or not np.isfinite(x) else f"{x:.4g}"
+
+
+def _fmt_seeds(per_seed):
+    return ", ".join(f"s{k}={_fmt(v)}" for k, v in sorted(per_seed.items())) or "-"
+
+
 def write_report(hyps, figs, out_json="analysis_report.json",
-                 out_md="analysis_report.md", ebm=None):
+                 out_md="analysis_report.md", ebm=None, primary=None):
     with open(out_json, "w") as fh:
-        json.dump({"hypotheses": hyps, "figures": figs, "ebm_metric": ebm},
-                  fh, indent=2)
+        json.dump({"hypotheses": hyps, "figures": figs, "ebm_metric": ebm,
+                   "primary_vs_baselines": primary}, fh, indent=2)
     lines = ["# Phase-2 analysis report", "",
              "## PREREG hypotheses", "",
              "| hypothesis | observed | threshold | verdict |",
@@ -259,6 +300,22 @@ def write_report(hyps, figs, out_json="analysis_report.json",
                   "| config | Tier 1 | Tier 2 |", "|---|---|---|"]
         for cfg, v in ebm["by_config"].items():
             lines.append(f"| {cfg} | {v['t1_ebm_viol']} | {v['t2_ebm_viol']} |")
+    if primary and primary["rows"]:
+        bl = primary["baselines"]
+        lines += ["", f"## Primary metric vs baselines (`{primary['metric']}`)",
+                  "", "Descriptive only: no thresholds or verdicts. RMSE (K); "
+                  "mean over seeds with a finite value, then per-seed values. "
+                  "Baselines are taken at the same data fraction.", "",
+                  "| config | fraction | mean | per seed | "
+                  + " | ".join(f"{b} mean | {b} per seed" for b in bl) + " |",
+                  "|---|---|---|---|" + "---|---|" * len(bl)]
+        for r in primary["rows"]:
+            cells = [r["config"], f"{r['fraction']:g}", _fmt(r["arm"]["mean"]),
+                     _fmt_seeds(r["arm"]["per_seed"])]
+            for b in bl:
+                cells += [_fmt(r["baselines"][b]["mean"]),
+                          _fmt_seeds(r["baselines"][b]["per_seed"])]
+            lines.append("| " + " | ".join(cells) + " |")
     lines += ["", "## Figures", ""]
     for k, v in figs.items():
         lines.append(f"- {k}: `{v}`")
@@ -276,12 +333,14 @@ def main():
     df = load_results(args.results)
     thr = yaml.safe_load(open(args.thresholds)) or {}
     figs = {
-        "headline": headline_figure(df, metric=thr.get("h1_metric") or "t2_resp_S"),
+        "headline": headline_figure(df, metric=thr.get("h1_metric")
+                                    or "t2_polar_winter_S"),
         "rollout": rollout_figure(df, run_root=args.run_root),
         "calibration": calibration_figure(df),
     }
     hyps = evaluate_hypotheses(df, thr)
-    write_report(hyps, figs, ebm=ebm_metric_table(df))
+    write_report(hyps, figs, ebm=ebm_metric_table(df),
+                 primary=primary_vs_baselines(df))
     print(json.dumps(hyps, indent=2))
     print("figures:", figs)
 

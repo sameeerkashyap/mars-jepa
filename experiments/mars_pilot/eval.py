@@ -7,7 +7,15 @@ It imports load_split_eval_labels (train.py / models/ must never do so).
 Metrics (Tier 1 and Tier 2 reported separately):
   1. Intervention-response error: predicted (T_a - T_0) vs true response, with
      T_0 the same-seed control rollout.  Primary polar-winter T_s (|lat|>60),
-     N and S separately; secondary global-mean.
+     N and S separately: RMSE over the WINTER steps of each rollout window only
+     (metric_defs.winter_steps, s_ref from the FULL trajectory's S); a window
+     with no winter steps is NaN and skipped (keys polar_winter_{N,S}).
+     polar_winter_{N,S}_pinned: the same, restricted to cells whose TRUE
+     control_T_s <= T_frost + PIN_TOL_K (eval label; only this module uses it);
+     a window counts only if it has >= 1 control-pinned winter band cell-step.
+     Secondary global-mean (all steps).  Contributing window / cell-step counts
+     are in intervention_response_counts.  (The polar_winter_ prefix keeps these
+     apart from the earlier all-step polar_N/polar_S, PREREG D6.)
   2. Rollout error vs horizon.
   3. Calibration (stochastic models + ensemble): CRPS, 90% coverage, Spearman
      of spread vs OOD distance.
@@ -28,12 +36,15 @@ import numpy as np
 import torch
 
 from dataio import load_split, load_split_eval_labels   # eval-only imports
-from common import load_config
+from common import load_config, frost_point
+from metric_defs import polar_bands, seasonal_ref, winter_steps
 from models.base import build_model
 from physics_torch import EBMResidual, load_ebm_params, stored_dt_seconds
 from train import load_phase2_config, pick_device
 
-POLAR_DEG = 60.0
+POLAR_KEYS = ("polar_winter_N", "polar_winter_S", "polar_winter_N_pinned",
+              "polar_winter_S_pinned")
+PIN_TOL_K = 0.5          # control-pinned: true control_T_s <= T_frost + this
 EBM_METRIC_LABEL = ("EBM-residual constraint satisfaction (also the training objective for physics arms)")
 TRAIN_FA_MAX = 5.0
 
@@ -72,16 +83,29 @@ def _windows_with_control(traj, labels, K, H, stride):
     return out
 
 
-def _polar_masks(lat):
-    thr = np.radians(POLAR_DEG)
-    return lat > thr, lat < -thr          # (N band, S band)
+def _winter_masks(S_h, ctrl_h, bands, s_refs, T_frost):
+    """(time, ncell) masks over a window's horizon, per hemisphere h:
+    "h" = winter step & band cell; "h_pinned" = that & true control pinned."""
+    out = {}
+    for h, band in bands.items():
+        w = winter_steps(S_h, band, s_ref=s_refs[h])
+        m = w[:, None] & band[None, :]
+        out[h] = m
+        out[h + "_pinned"] = m & (ctrl_h <= T_frost + PIN_TOL_K)
+    return out
 
 
-def _band_rmse(err, band):
-    """RMSE of err (time, ncell) over a latitude band (ncell bool)."""
-    if band.sum() == 0:
-        return float("nan")
-    return float(np.sqrt(np.mean(err[:, band] ** 2)))
+def _masked_rmse(err, mask):
+    """(RMSE of err over mask, n contributing cell-steps); NaN if empty."""
+    n = int(mask.sum())
+    if n == 0:
+        return float("nan"), 0
+    return float(np.sqrt(np.mean(err[mask] ** 2))), n
+
+
+def _nanmean(v):
+    v = np.asarray(v, float)
+    return float(v[np.isfinite(v)].mean()) if np.isfinite(v).any() else float("nan")
 
 
 # --------------------------------------------------------------------------
@@ -130,7 +154,8 @@ def evaluate(run_dirs, data_dir, family, split, p2, full_cfg, device,
     labels = load_split_eval_labels(data_dir, family, split)    # eval labels
     lat_np = np.asarray(trajs[0]["lat"], np.float32)
     lat = torch.tensor(lat_np, device=device)
-    bandN, bandS = _polar_masks(lat_np)
+    bands = polar_bands(lat_np)
+    T_frost = frost_point(full_cfg["co2"]["surface_pressure_pa"], full_cfg["co2"])
     w = np.asarray(trajs[0]["w"], np.float32)
 
     res = EBMResidual(load_ebm_params(), full_cfg["grid"]["n"],
@@ -142,7 +167,9 @@ def evaluate(run_dirs, data_dir, family, split, p2, full_cfg, device,
               else p2["calibration"]["n_samples"])
 
     # accumulators
-    respN, respS, respG = [], [], []
+    resp = {k: [] for k in POLAR_KEYS}
+    n_cells = {k: 0 for k in POLAR_KEYS}
+    respG = []
     horizon_sq = np.zeros(H)
     horizon_ct = 0
     crps_list, cover_list, spread_list, ood_list = [], [], [], []
@@ -150,6 +177,8 @@ def evaluate(run_dirs, data_dir, family, split, p2, full_cfg, device,
 
     for traj, lab in zip(trajs, labels):
         wins = _windows_with_control(traj, lab, K, H, stride)
+        S_full = np.asarray(traj["S"])
+        s_refs = {h: seasonal_ref(S_full, b) for h, b in bands.items()}
         for wd in wins:
             Ts_ctx = torch.tensor(wd["Ts"][None, :K], device=device)
             S_t = torch.tensor(wd["S"][None], device=device)
@@ -172,8 +201,12 @@ def evaluate(run_dirs, data_dir, family, split, p2, full_cfg, device,
             pred_resp = Ta - T0
             err = pred_resp - wd["resp"]     # (H, ncell)
 
-            respN.append(_band_rmse(err, bandN))
-            respS.append(_band_rmse(err, bandS))
+            masks = _winter_masks(wd["S"][K:], wd["ctrl"][K:], bands, s_refs,
+                                  T_frost)
+            for h, k in zip(("N", "S", "N_pinned", "S_pinned"), POLAR_KEYS):
+                v, nc = _masked_rmse(err, masks[h])
+                resp[k].append(v)
+                n_cells[k] += nc
             respG.append(float(np.sqrt(np.mean((err @ w) ** 2))))
 
             # rollout error vs horizon (forced global-mean)
@@ -192,7 +225,7 @@ def evaluate(run_dirs, data_dir, family, split, p2, full_cfg, device,
                 S_samp = fs[:, 0]            # (n, H, ncell)
                 y = wd["forced"]            # (H, ncell)
                 # CRPS averaged over polar bands + global
-                band = bandN | bandS
+                band = bands["N"] | bands["S"]
                 idx = np.where(band)[0]
                 cr = np.mean([_crps(S_samp[:, h, c], y[h, c])
                               for h in range(0, H, max(1, H // 8))
@@ -208,10 +241,17 @@ def evaluate(run_dirs, data_dir, family, split, p2, full_cfg, device,
 
     metrics = {
         "split": split, "n_windows": horizon_ct,
+        "protocol": {"K": K, "H": H, "stride": stride},
         "intervention_response_rmse": {
-            "polar_N": float(np.nanmean(respN)),
-            "polar_S": float(np.nanmean(respS)),
+            **{k: _nanmean(resp[k]) for k in POLAR_KEYS},
             "global_mean": float(np.nanmean(respG)),
+        },
+        "intervention_response_counts": {
+            **{k: {"n_windows": int(np.isfinite(resp[k]).sum()),
+                   "n_cell_steps": n_cells[k]} for k in POLAR_KEYS},
+            "global_mean": {"n_windows": len(respG)},
+            "n_windows_total": horizon_ct,
+            "pin_tol_K": PIN_TOL_K, "T_frost_K": float(T_frost),
         },
         "rollout_rmse_vs_horizon": np.sqrt(horizon_sq / max(horizon_ct, 1)).tolist(),
         "energy_budget_violation_mean": float(np.mean(ebm_violation)),

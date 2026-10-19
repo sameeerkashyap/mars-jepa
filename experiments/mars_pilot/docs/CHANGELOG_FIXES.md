@@ -96,3 +96,134 @@ State at end: **50 passed** (`python3 -m pytest tests/ -q`, ~90 s CPU).
 
 ## Files moved
 * `dio.py` → `legacy/dio.py`.
+
+---
+
+# CHANGELOG — metric-alignment pass (2026-10-17, later)
+
+## 9. `metric_defs.py` (new) — single source of truth for polar-winter masks
+* `BAND_DEG = 60.0`, `WINTER_S_FRAC = 0.10`; `polar_bands(lat_rad)`,
+  `seasonal_ref(S_full, band)`, `winter_steps(S, band, frac, s_ref)`.
+  Observable-only (insolation + latitude).
+* Tests: `tests/test_metric_defs.py`.
+
+## 10. `diag_tier2.py` uses `metric_defs`; seed counts for `frac_unpinned`
+* Own band / winter-mask code replaced by `polar_bands` / `winter_steps`
+  (identical definition: strict `>60` / `<-60` deg, `<= frac * record max`).
+* `summarize` now reports, per (A, hemisphere): `frac_unpinned_n_seeds` (seeds
+  with a control-pinned winter band cell), `n_seeds_no_ctrl_pinned`, and
+  `frac_unpinned_min`. `frac_unpinned` is the mean over contributing seeds only
+  (same value as the previous `nanmean`, but the dropped seeds are now counted).
+  The table printout has a second block with these counts.
+* Tests: `test_diag_tier2_counts_seeds_without_pinned_cells`,
+  `test_diag_tier2_uses_metric_defs`.
+
+## 11. `eval.py` — polar-winter metric restricted to winter steps (PREREG D6)
+* Before: `polar_N/S` = RMSE over ALL H steps of each rollout window in the
+  band, i.e. not winter-restricted.
+* Now: bands from `metric_defs.polar_bands`; per trajectory and hemisphere,
+  `s_ref = seasonal_ref(full trajectory S)`; per window the horizon's winter
+  steps are `winter_steps(S_horizon, band, s_ref=s_ref)`. `polar_N/S` = RMSE over
+  winter-step band cells only; a window with no winter steps → NaN, skipped by
+  the mean.
+* New `polar_N_pinned` / `polar_S_pinned`: same, restricted to cell-steps whose
+  TRUE `control_T_s <= T_frost + PIN_TOL_K` (`PIN_TOL_K = 0.5`, T_frost from
+  `common.frost_point` and config). `control_T_s` is used only in `eval.py`.
+* New `intervention_response_counts`: per metric, `n_windows` (finite windows)
+  and `n_cell_steps`; plus `n_windows_total`, `pin_tol_K`, `T_frost_K`.
+* Removed `POLAR_DEG`, `_polar_masks`, `_band_rmse` (replaced by
+  `_winter_masks`, `_masked_rmse`, `_nanmean`). `sweep.py` keys
+  (`polar_N`, `polar_S`, `global_mean`) are unchanged, so results.csv is
+  compatible; their meaning changed (winter-only).
+* Tests: `tests/test_eval_metrics.py` (mask = metric_defs on a fixture, s_ref
+  from full trajectory, winter-only differs from all-steps under large summer
+  error, pinned metric uses only control-pinned cells, no eval-label references
+  in train/calibrate/data_windows/physics_torch/metric_defs/models).
+
+## 12. `diag_linearity.py` (new; simulator only)
+* Same structure as `diag_tier2.py` (top-level `_seed_job`, spawn
+  ProcessPoolExecutor, `--workers --seeds --out`, frozen-design asserts).
+  Per seed: spin, control, constant A ∈ {1..5} (train) and {7.5, 8, 9, 10}
+  (test), record 3 yr. Groups band / pinned / rest over polar-winter cell-steps;
+  through-origin fit on train A, extrapolated to test A; true, predicted, error,
+  relative error, seeds contributing, and `seeds_missing`. Writes
+  `diag_linearity.json`.
+* Test: `tests/test_diag_linearity.py` (structure only; no simulator run).
+
+## 13. PREREG.md — appended D5, D6, D7 to §12 (no existing text edited;
+  verified by diff against a pre-edit copy: additions only). All numbers and
+  thresholds left blank (`____`).
+
+## 14. Runs and files moved
+* Pre-existing `diag_tier2_20seeds.{json,log}` (20:48, written by the old
+  diag_tier2.py, not by this pass) moved to
+  `legacy/diag_tier2_20seeds_prev_2048.{json,log}` before re-running.
+* Ran in the background (simulator only): `diag_tier2.py --workers 5 --mags 7.5
+  8.0 --seeds 7000..7019 --out diag_tier2_20seeds.json`, and
+  `diag_linearity.py --workers 5`. Logs: `diag_tier2_20seeds.log`,
+  `diag_linearity.log`.
+
+## 15. Existing test changed: `tests/test_integration.py::_check_eval`
+* It asserted `polar_N` and `polar_S` finite. With the winter-only metric
+  (item 11, requirement "no winter steps → NaN"), the 0.3-yr scratch record
+  (one window) has no winter step in at least one hemisphere, so the assertion
+  failed (2 tests). Replaced with: `global_mean` finite; for each polar metric
+  (incl. `_pinned`), finite ⇔ `n_windows > 0` ⇔ `n_cell_steps > 0`, and
+  `n_windows <= n_windows_total`. No metric values were printed or inspected.
+* Suite: **66 passed** (`python3 -m pytest tests/ -q`).
+
+---
+
+# CHANGELOG — polar-winter naming / counts / baselines pass (2026-10-17, later)
+
+## 16. Renamed polar-winter result keys and columns
+* `eval.py`: `polar_N/S` → `polar_winter_N/S`, `polar_N/S_pinned` →
+  `polar_winter_N/S_pinned` (now module-level `eval.POLAR_KEYS`) in
+  `intervention_response_rmse` and `intervention_response_counts`.
+* `sweep.py` results.csv: `t{1,2}_resp_{N,S}` → `t{1,2}_polar_winter_{N,S}`.
+  `t{1,2}_resp_global` unchanged (not a polar metric).
+* `analyze.py` fallback headline metric `t2_resp_S` → `t2_polar_winter_S`.
+* Tests (`test_integration.py`, `test_phase2.py`), README_phase2 §7, RUNME,
+  thresholds.yaml comments updated. thresholds.yaml values still all blank.
+* Not renamed: internal mask keys of `eval._winter_masks` ("N", "S_pinned", …),
+  historical CHANGELOG entries, PREREG.md (D6/D7 still say `polar_S_pinned`;
+  it is the same quantity as `polar_winter_S_pinned`).
+* `sweep._append_row` now refuses to append to a results.csv whose header
+  differs from the current `FIELDS` (e.g. an older all-step results.csv).
+
+## 17. Window / cell counts for `*_pinned`; results.csv counts
+* Checked: a window counts toward `polar_winter_{N,S}_pinned` only if its
+  horizon has ≥ 1 winter-step band cell whose true control `T_s` ≤ T_frost +
+  `PIN_TOL_K`; otherwise its value is NaN and it is excluded from the mean and
+  from `n_windows`. This was already correct in eval.py; no change.
+* Fixed: results.csv did not record the `_pinned` metrics nor any counts. It
+  now has, per tier and polar metric, `t{1,2}_<key>`, `t{1,2}_<key>_n_windows`,
+  `t{1,2}_<key>_n_cell_steps` (helper `sweep.polar_columns`). `n_cell_steps`
+  counts (cell, time-step) pairs, as in eval.json.
+* eval.py metrics now also record `protocol: {K, H, stride}`.
+* Tests: `tests/test_polar_winter_results.py` — runs `eval.evaluate()` on a
+  synthetic trajectory (loaders monkeypatched) and checks counts against an
+  independent computation from `metric_defs`, including a winter window with no
+  pinned cells (excluded) and the exact pinned RMSE; results.csv columns and
+  header guard.
+
+## 18. analyze.py: primary metric vs LINEAR and HYBRID (descriptive)
+* `primary_vs_baselines(df)`: per (configuration, fraction), mean and per-seed
+  `t2_polar_winter_S_pinned` next to `linear/off` and `hybrid/off` at the same
+  fraction. No thresholds, no verdicts. Written to `analysis_report.json`
+  (`primary_vs_baselines`) and as a table in `analysis_report.md`.
+* Test: `test_primary_vs_baselines_table` (fake results).
+
+## 19. LINEAR / EBM-only scored like the learned arms
+* Checked: every arm goes through the same `eval.evaluate()`; K/H come from the
+  run's `arch.json` (written from the shared `config_phase2.yaml` protocol);
+  stride = H; windows, masks and metric code have no per-arm branch. Only
+  differences are in how predictions are produced: stochastic arms (RSSM) use
+  the mean of `n_samples` draws and the ensemble the member mean; LINEAR,
+  EBM-only, GRU, hybrid, transformer are deterministic, single rollout. No
+  protocol difference found, nothing changed.
+* Test: `test_every_arm_scored_with_same_protocol[linear|ebm_only|gru|hybrid]`
+  — same protocol, window count and per-metric counts as the independent
+  computation.
+
+Suite: **74 passed** (`python3 -m pytest tests/ -q`, ~80 s).

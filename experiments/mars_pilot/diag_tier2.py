@@ -38,11 +38,11 @@ from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
 
+from metric_defs import BAND_DEG, WINTER_S_FRAC, polar_bands, winter_steps
+
 MAGS = [7.5, 8.0, 9.0, 10.0]
 DIAG_SEEDS = [7000, 7001, 7002, 7003, 7004]
 REC_YEARS = 3
-BAND_DEG = 60.0
-WINTER_S_FRAC = 0.10
 PIN_TOL_K = 0.5
 
 
@@ -64,13 +64,10 @@ def _seed_job(args):
                 m_init=spin["m_final"])
     ctrl = run_truth(cfg, F_a=0.0, seed=seed, years=rec_years,
                      mismatch_scale=SCALE, **init)
-    latd = np.degrees(np.asarray(ctrl["lat"]))
-    bands = {"N": latd > BAND_DEG, "S": latd < -BAND_DEG}
+    bands = polar_bands(ctrl["lat"])
     S_ctrl = np.asarray(ctrl["S"])
-    winter = {}
-    for h, sel in bands.items():
-        s_band = S_ctrl[:, sel].mean(axis=1)
-        winter[h] = s_band <= winter_frac * s_band.max()
+    winter = {h: winter_steps(S_ctrl, sel, frac=winter_frac)
+              for h, sel in bands.items()}
 
     out = {"seed": seed, "T_frost": float(T_frost),
            "n_band_cells": {h: int(sel.sum()) for h, sel in bands.items()},
@@ -112,13 +109,17 @@ def summarize(per_seed, mags):
                 row[h] = None
                 continue
             r = np.array([v["winter_mean_response_K"] for v in vals])
+            fr = np.array([v["frac_ctrl_pinned_unpinned_forced"] for v in vals])
+            fin = np.isfinite(fr)          # NaN = seed had no control-pinned cell
             sig, sd = float(r.mean()), float(r.std(ddof=1)) if len(r) > 1 else float("nan")
             row[h] = {
                 "signal_K": sig, "seed_std_K": sd,
                 "SN": (sig / sd) if (np.isfinite(sd) and sd > 1e-9) else float("inf"),
                 "peak_K": float(np.mean([v["winter_peak_response_K"] for v in vals])),
-                "frac_unpinned": float(np.nanmean(
-                    [v["frac_ctrl_pinned_unpinned_forced"] for v in vals])),
+                "frac_unpinned": float(fr[fin].mean()) if fin.any() else float("nan"),
+                "frac_unpinned_min": float(fr[fin].min()) if fin.any() else float("nan"),
+                "frac_unpinned_n_seeds": int(fin.sum()),
+                "n_seeds_no_ctrl_pinned": int((~fin).sum()),
                 "n_seeds": len(vals)}
         table[str(A)] = row
     return table
@@ -138,6 +139,16 @@ def print_table(table):
                          f"{v['signal_K']:>6.2f} {v['seed_std_K']:>6.3f} "
                          f"{v['SN']:>6.1f} {v['peak_K']:>6.2f} {v['frac_unpinned']:>5.2f}")
         print(f"{float(A):>5.1f} | {cells[0]} | {cells[1]}")
+    print("unp = mean over seeds WITH a control-pinned winter band cell; seeds "
+          "contributing (of total) / min:")
+    for A, row in table.items():
+        parts = []
+        for h in ("N", "S"):
+            v = row[h]
+            parts.append(f"{h} n/a" if v is None else
+                         f"{h} {v['frac_unpinned_n_seeds']}/{v['n_seeds']} "
+                         f"min {v['frac_unpinned_min']:.2f}")
+        print(f"{float(A):>5.1f} | " + " | ".join(parts))
 
 
 def main(argv=None):

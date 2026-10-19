@@ -36,13 +36,30 @@ RESULTS = "results.csv"
 LOGDIR = "logs"
 RUNDIR = "runs"
 
+# Polar-winter metrics (eval.POLAR_KEYS), per tier: value, n_windows and
+# n_cell_steps contributing, e.g. t2_polar_winter_S_pinned{,_n_windows,_n_cell_steps}.
+POLAR_FIELDS = [f"{t}_{k}{suf}" for t in ("t1", "t2") for k in evalmod.POLAR_KEYS
+                for suf in ("", "_n_windows", "_n_cell_steps")]
+
 FIELDS = ["tag", "arm", "physics", "fraction", "seed", "lambda", "n_params",
           "val_loss",
-          "t1_resp_N", "t1_resp_S", "t1_resp_global",
-          "t2_resp_N", "t2_resp_S", "t2_resp_global",
+          *POLAR_FIELDS,
+          "t1_resp_global", "t2_resp_global",
           "t1_ebm_viol", "t2_ebm_viol",
           "t2_crps", "t2_cov90", "t2_spread_ood_rho",
           "wall_sec", "status"]
+
+
+def polar_columns(prefix, tier_metrics):
+    """results.csv polar-winter columns for one tier's eval.evaluate() output."""
+    ir = tier_metrics["intervention_response_rmse"]
+    cnt = tier_metrics["intervention_response_counts"]
+    out = {}
+    for k in evalmod.POLAR_KEYS:
+        out[f"{prefix}_{k}"] = ir[k]
+        out[f"{prefix}_{k}_n_windows"] = cnt[k]["n_windows"]
+        out[f"{prefix}_{k}_n_cell_steps"] = cnt[k]["n_cell_steps"]
+    return out
 
 
 def enumerate_grid(p2):
@@ -72,6 +89,12 @@ def _load_done(results_path):
 
 def _append_row(results_path, row):
     exists = os.path.exists(results_path)
+    if exists:
+        with open(results_path) as fh:
+            header = next(csv.reader(fh), None)
+        if header is not None and header != FIELDS:
+            raise RuntimeError(f"{results_path} has a different column set "
+                               "(older sweep version?); write to a new file")
     with open(results_path, "a", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=FIELDS)
         if not exists:
@@ -132,13 +155,13 @@ def run_one(spec):
                                           ensemble=ensemble)
         if "tier1" in mets:
             ir = mets["tier1"]["intervention_response_rmse"]
-            row.update(t1_resp_N=ir["polar_N"], t1_resp_S=ir["polar_S"],
-                       t1_resp_global=ir["global_mean"],
+            row.update(polar_columns("t1", mets["tier1"]))
+            row.update(t1_resp_global=ir["global_mean"],
                        t1_ebm_viol=mets["tier1"]["energy_budget_violation_mean"])
         if "tier2" in mets:
             ir = mets["tier2"]["intervention_response_rmse"]
-            row.update(t2_resp_N=ir["polar_N"], t2_resp_S=ir["polar_S"],
-                       t2_resp_global=ir["global_mean"],
+            row.update(polar_columns("t2", mets["tier2"]))
+            row.update(t2_resp_global=ir["global_mean"],
                        t2_ebm_viol=mets["tier2"]["energy_budget_violation_mean"])
             cal = mets["tier2"].get("calibration")
             if cal:
