@@ -243,3 +243,16 @@ the time of any entry below; only fake-fixture smoke runs existed.
   or run directory exists from that time, i.e. no test metric is on record from
   it; the legacy data are not used for analysis (D3).
 
+* **D5. Tier 2 magnitude range. Tier 2 is constant forcing only, with magnitudes in [8.0, 10.0] W/m^2. The range was set from response-based simulator diagnostics (diag_tier2.py: forced minus same-seed control, record_years=3, 20 storm seeds 7000-7019), run before any model was trained or evaluated on Tier 2 data. At 8.0 every seed fully unpinned in both hemispheres (minimum unpinned fraction 1.00). At 7.5 the S-hemisphere minimum was 0.98, so 7.5 was excluded. This differs from the original design bound of 1.5X = 7.5 W/m^2.
+
+* **D6 — eval.py implemented polar-winter as an all-step band RMSE; aligned with
+  the registered definition and control-pinned-cell variants added before any
+  model was evaluated.** `eval.py` took the intervention-response RMSE over all
+  time steps of each rollout window in the |lat| > 60° band, i.e. not restricted
+  to polar winter as §6 specifies. Changed (2026-10-17) to winter steps only,
+  using the shared observable-only definition in `metric_defs.py` (band-mean
+  insolation ≤ `WINTER_S_FRAC` × its max over the full trajectory); windows with
+  no winter steps are skipped. Added `polar_N_pinned` / `polar_S_pinned`: the
+  same metric restricted to cells whose true control `T_s` ≤ T_frost + `PIN_TOL_K` (eval.py).
+  No model had been evaluated on generated data at the time of this change.
+* **D7. Primary metric for H1 and H2. Intervention response error on S-hemisphere control-pinned winter cells, Tier 2 (polar_S_pinned). Secondary: polar_S (winter-only band) on Tier 2 and Tier 1. N-hemisphere metrics are reported as context only, because N unpins inside the training range and a linear extrapolation of the training response is within about 3% there. This choice was informed by diag_linearity.py (simulator-only, 5 seeds), run before any model was trained, in which a linear fit underpredicts the S control-pinned response by 35 to 42% and the S band response by 13 to 15%.
