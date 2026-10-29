@@ -47,3 +47,16 @@ class GRUModel(BaseSeqModel):
             prev = pred
         pred_norm = torch.stack(preds, dim=1)      # (B, H, ncell)
         return self.dTs(pred_norm), {}
+
+
+class GRUNoForce(GRUModel):
+    """Arm 6 (PREREG D8): the arm-1 GRU with the F_a input REMOVED (not zeroed).
+
+    Control only: shows whether the forced arms actually use F_a."""
+
+    def __init__(self, stats, n_cell, cfg):
+        super().__init__(stats, n_cell, cfg)
+        self.cell = nn.GRUCell(n_cell + n_cell, self.hidden)   # [T_s, S]
+
+    def _step_input(self, Ts, S, Fa):
+        return torch.cat([Ts, S], dim=-1)

@@ -139,6 +139,8 @@ def train_one(arm, physics, fraction, seed, lam, p2, full_cfg, device,
             loss = _normalized_data_loss(pred, target, stats)
             if "kl" in aux:
                 loss = loss + aux["kl"]
+            if hasattr(model, "latent_loss"):      # JEPA: horizon truth used
+                loss = loss + model.latent_loss(aux, target)   # as a TARGET only
             if use_phys:
                 S_h = S[:, K:]
                 Fa_h = Fa[:, K:]
@@ -151,6 +153,8 @@ def train_one(arm, physics, fraction, seed, lam, p2, full_cfg, device,
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
             opt.step()
+            if hasattr(model, "ema_update"):
+                model.ema_update()
         if verbose or record_curve:
             vl = _eval_val(model, va_dl, stats, K, lat, device)
             val_curve.append(vl)

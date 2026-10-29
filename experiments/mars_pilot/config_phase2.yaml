@@ -46,7 +46,9 @@ physics:
     horizon: 120
 
 # ---- architecture hyperparameters (sized to match param_budget +/-10%) ----
-# counts (n_cell=64): gru 69744, rssm 65184, transformer 71168, hybrid 67104
+# counts (n_cell=64): gru 69744, rssm 65184, transformer 71168, hybrid 67104,
+# gru_noforce 69474 (shares the gru block), jepa 68150 (trainable; the EMA
+# target encoder is a non-trainable copy of the online encoder)
 # -> max/min = 1.092 (within the required 10%).  linear/ebm_only are baselines,
 #    exempt from matching (see docs/README_phase2.md).
 arch:
@@ -72,6 +74,12 @@ arch:
                            # cells when initializing the EBM ice state from the
                            # OBSERVED context (never from hidden m)
     frost_init_band_K: 0.5 # a context cell is "pinned" if T_s_last <= T_frost+band
+  jepa:                    # PREREG D9
+    embed: 48              # per-step T_s embedding (online + EMA target encoder)
+    latent: 58             # context-encoder / predictor state size
+    decoder_hidden: 64
+    ema_decay: 0.99        # target-encoder momentum
+    latent_weight: 1.0     # weight of the latent (JEPA) loss vs the T_s loss
   linear:
     ar_order: 4            # ARX autoregressive order on T_s
   ensemble:
@@ -85,7 +93,8 @@ calibration:
 
 # ---- sweep grid (sweep.py; I run it myself) ----
 sweep:
-  arms: [gru, rssm, transformer, hybrid, linear, ebm_only, gru_ensemble]
+  arms: [gru, rssm, transformer, hybrid, linear, ebm_only, gru_ensemble,
+         gru_noforce, jepa]   # D8/D9: not in train.PHYSICS_ARMS -> physics off only
   physics: ["off", "A", "B"]   # quoted: YAML would read bare off as boolean False
   fractions: [0.1, 0.3, 1.0]
   seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]

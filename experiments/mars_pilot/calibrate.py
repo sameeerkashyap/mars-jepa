@@ -128,7 +128,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--arms", nargs="+",
                     default=["gru", "rssm", "transformer", "hybrid", "linear",
-                             "ebm_only"])
+                             "ebm_only", "jepa", "gru_noforce"])
     ap.add_argument("--seeds", nargs="+", type=int, default=[0, 1, 2])
     ap.add_argument("--family", default="calibration")
     ap.add_argument("--epochs", type=int, default=None)

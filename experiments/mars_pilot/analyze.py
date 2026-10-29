@@ -32,7 +32,7 @@ import matplotlib.pyplot as plt
 
 FIGDIR = "figures_phase2"
 EBM_METRIC_LABEL = ("EBM-residual constraint satisfaction (also the training objective for physics arms)")
-PURE_ARMS = ["gru", "rssm", "transformer", "jepa"]   # jepa: PREREG D8
+PURE_ARMS = ["gru", "rssm", "transformer", "jepa"]   # jepa: PREREG D9
 PRIMARY_METRIC = "t2_polar_winter_S_pinned"          # PREREG D7
 BASELINE_CONFIGS = ("linear/off", "hybrid/off")
 

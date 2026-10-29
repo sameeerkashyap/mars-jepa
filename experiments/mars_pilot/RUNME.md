@@ -26,10 +26,10 @@ pip install -r requirements_phase2.txt   # numpy scipy pyyaml matplotlib pandas 
 ```
 python3 -m pytest tests/ -q
 ```
-Expected: `77 passed` (dataio + Checkpoint-A + split tests, Phase-2 tests, the
+Expected: `88 passed` (dataio + Checkpoint-A + split tests, Phase-2 tests, the
 end-to-end `tests/test_integration.py` on 4 tiny trajectories generated through
 `gen_data.py`, and a structure-only `diag_tier2.py` check; ~90 s on CPU). The Phase-2 tests cover: no hidden leakage, eval labels never imported by
-train/models, train-only normalization, param counts within 10%, physics residual
+train/models, train-only normalization, param counts within 10% (incl. `gru_noforce`, `jepa`), the no-forcing GRU ignores `F_a`, the JEPA EMA target encoder is untrained and updated by momentum, physics residual
 ~0 on an EBM trajectory (and forcing-aware), open-loop rollouts ignore future
 ground truth, determinism, hybrid ice init from context only, calibration cannot
 load test splits, and the stratified/nested/deterministic subsampler.
@@ -49,8 +49,8 @@ Select lambda on validation with the shared grid: add `--select-lambda`.
 ## 3. Calibration (validation/calibration data ONLY; cannot touch test)
 
 ```
-python3 calibrate.py --arms gru rssm transformer hybrid linear ebm_only \
-    --seeds 0 1 2 --out calibration_report.json
+python3 calibrate.py --arms gru rssm transformer hybrid linear ebm_only jepa \
+    gru_noforce --seeds 0 1 2 --out calibration_report.json
 ```
 Expected: writes `calibration_report.json` with, per arm, `n_params`,
 `val_rmse_K_mean/std`, per-seed values, `seed_to_seed_spread_K`, per-seed
@@ -63,7 +63,7 @@ split (see the test `test_calibration_cannot_load_test`).
 ## 4. Sweep (I run this myself — resumable)
 
 Full grid = arms × physics{off,A,B where applicable} × fraction{0.1,0.3,1.0} ×
-10 seeds (390 runs). **Do not launch the full sweep from the agent.**
+10 seeds (450 runs; `gru_noforce` and `jepa` are physics off only). **Do not launch the full sweep from the agent.**
 
 ```
 # smoke first (tiny grid):

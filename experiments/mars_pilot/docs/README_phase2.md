@@ -18,7 +18,7 @@ thresholds in `thresholds.yaml` (reviewer fills).
 | `dataio.py` | THE single data API (`dio.py` merged in, moved to `legacy/`): `load_split`, `load_split_eval_labels`, `subsample_train`, guards |
 | `data_windows.py` | window slicing (K context + H rollout) + normalization stats from the trained subset |
 | `physics_torch.py` | differentiable EBM residual (physics loss) + fixed EBM backbone (hybrid) |
-| `models/` | arms: `gru`, `rssm`, `transformer`, `hybrid`, `linear`, `ebm_only` |
+| `models/` | arms: `gru`, `rssm`, `transformer`, `hybrid`, `linear`, `ebm_only`, `gru_noforce` (D8), `jepa` (D9) |
 | `train.py` | train one configuration (open-loop protocol; physics loss off/A/B) |
 | `eval.py` | **only** module that reads test splits / eval labels; computes all metrics |
 | `calibrate.py` | val/calibration only; seed-spread + EBM/linear baselines; test-proof |
@@ -93,12 +93,20 @@ All neural arms are sized to match trainable parameter counts within 10%
 | RSSM | 65 184 | deter=72, stoch=16, hidden=64; prior/posterior/decoder MLPs |
 | Transformer | 71 168 | d_model=64, 4 heads, 2 layers, ff=96; **fixed sinusoidal** positions |
 | Hybrid | 67 104 | fixed EBM backbone + g_θ MLP (g_hidden=160, 2 layers) |
+| GRU no-forcing (D8) | 69 474 | the GRU above with the `F_a` input column removed (control) |
+| JEPA (D9) | 68 150 | T_s encoder (embed=48) + context GRU + action-conditioned latent predictor (latent=58) + MLP decoder(64); EMA target encoder (decay 0.99) is a non-trainable copy, not counted |
 
 max/min = 1.092 (≤ 1.10). Test: `test_param_counts_within_10pct`.
 
 * **LINEAR** (ARX ridge baseline, 70 params) and **EBM-only** (0 trainable) are
-  explicitly *baselines*; the brief's 10% matching is applied to the four
+  explicitly *baselines*; the brief's 10% matching is applied to the six
   deep arms. (Matching a linear control to a 70k-param net is not meaningful.)
+* **JEPA** rolls out in latent space from the context state, conditioned only on
+  `[S, F_a]`; it never feeds `T_s` back. Loss = normalized `T_s` MSE (decoder) +
+  `latent_weight` × squared distance between the L2-normalized projected latents
+  and the L2-normalized EMA-encoded true horizon `T_s` (stop-gradient). The
+  decoder loss anchors the latent, so it cannot collapse. Future `T_s` is used
+  only as a training target (`latent_loss`), never as rollout input.
 * **GRU ensemble** = 5 independently-seeded GRU members (orchestrated in
   `sweep.py`/`eval.py`), used for calibration (5 samples).
 
@@ -212,9 +220,9 @@ forces `workers=1` on cuda/mps.
 
 ### Projected full-sweep cost
 
-Grid: 13 configs per (fraction, seed) = {gru,rssm,transformer}×{off,A,B} (9) +
-{hybrid, linear, ebm_only, gru_ensemble} (4); × 3 fractions × 10 seeds =
-**390 runs**. Config `train.epochs=20`.
+Grid: 15 configs per (fraction, seed) = {gru,rssm,transformer}×{off,A,B} (9) +
+{hybrid, linear, ebm_only, gru_ensemble, gru_noforce, jepa} (6); × 3 fractions ×
+10 seeds = **450 runs**. Config `train.epochs=20`.
 
 Per (fraction, seed) at frac 1.0 ≈ GRU 27 s + RSSM ~73 s (eval-bound) +
 Transformer ~340 s + hybrid 15 s + linear 5 s + ebm 2 s + gru_ensemble ~140 s ≈
@@ -237,7 +245,7 @@ rough all-fractions-per-seed total is ~1.4×1600 ≈ 2200 s.
    in [0, 10], with real context/insolation — a deliberately simple, label-free
    collocation; no test data touched.
 5. Hybrid correction scaled by 10 W/m²; `m_ref=1.0`, `frost_init_band_K=0.5`.
-6. Parameter-matching applies to the four deep arms; linear/EBM-only are baselines.
+6. Parameter-matching applies to the six deep arms; linear/EBM-only are baselines.
 7. Calibration uses the `calibration` family (train/val) by default; all its data
    access forces `calibration_mode=True` so a test split is unreachable.
 8. Intervention metric uses `control_T_s` as the control-rollout context — a real

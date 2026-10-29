@@ -46,7 +46,8 @@ class BaseSeqModel(nn.Module):
 
 
 def build_model(arm, stats, n_cell, arch, seed=0):
-    """Factory.  `arm` in {gru, rssm, transformer, hybrid, linear, ebm_only}."""
+    """Factory.  `arm` in {gru, rssm, transformer, hybrid, linear, ebm_only,
+    gru_noforce, jepa}."""
     torch.manual_seed(seed)
     if arm == "gru":
         from .gru import GRUModel
@@ -66,4 +67,10 @@ def build_model(arm, stats, n_cell, arch, seed=0):
     if arm == "ebm_only":
         from .hybrid import EBMOnly
         return EBMOnly(stats, n_cell, arch["hybrid"])
+    if arm == "gru_noforce":
+        from .gru import GRUNoForce
+        return GRUNoForce(stats, n_cell, arch["gru"])
+    if arm == "jepa":
+        from .jepa import JEPAModel
+        return JEPAModel(stats, n_cell, arch["jepa"])
     raise ValueError(f"unknown arm {arm}")

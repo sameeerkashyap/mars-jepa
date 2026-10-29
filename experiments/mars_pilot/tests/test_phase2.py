@@ -105,7 +105,7 @@ def test_param_counts_within_10pct(p2_small):
     stats = {"T_s_mean": 200, "T_s_std": 30, "S_mean": 100, "S_std": 80,
              "F_a_mean": 2, "F_a_std": 2}
     counts = {}
-    for arm in ["gru", "rssm", "transformer", "hybrid"]:
+    for arm in ["gru", "rssm", "transformer", "hybrid", "gru_noforce", "jepa"]:
         m = build_model(arm, stats, 64, p2_small["arch"], seed=0)
         counts[arm] = count_params(m)
     lo, hi = min(counts.values()), max(counts.values())
@@ -153,7 +153,7 @@ def test_physics_residual_includes_forcing(full_cfg):
 
 # -------------------------------------------------------------- open-loop
 @pytest.mark.parametrize("arm", ["gru", "rssm", "transformer", "linear",
-                                 "hybrid"])
+                                 "hybrid", "gru_noforce", "jepa"])
 def test_open_loop_ignores_future_ground_truth(arm, p2_small):
     torch.manual_seed(0)
     stats = {"T_s_mean": 200, "T_s_std": 30, "S_mean": 100, "S_std": 80,
@@ -174,15 +174,80 @@ def test_open_loop_ignores_future_ground_truth(arm, p2_small):
 
 
 # -------------------------------------------------------------- determinism
-def test_determinism_fixed_seed(p2_small, full_cfg):
+@pytest.mark.parametrize("arm", ["gru", "gru_noforce", "jepa"])
+def test_determinism_fixed_seed(arm, p2_small, full_cfg):
     kw = dict(epochs=1, max_batches=2)
-    m1, s1, i1 = train.train_one("gru", "off", 1.0, 7, 0.1, p2_small, full_cfg,
+    m1, s1, i1 = train.train_one(arm, "off", 1.0, 7, 0.1, p2_small, full_cfg,
                                  "cpu", **kw)
-    m2, s2, i2 = train.train_one("gru", "off", 1.0, 7, 0.1, p2_small, full_cfg,
+    m2, s2, i2 = train.train_one(arm, "off", 1.0, 7, 0.1, p2_small, full_cfg,
                                  "cpu", **kw)
     assert i1["val_loss"] == i2["val_loss"]
-    for a, b in zip(m1.parameters(), m2.parameters()):
-        assert torch.allclose(a, b)
+    # state_dict, not parameters(): also covers the JEPA EMA target encoder
+    for (ka, a), (kb, b) in zip(m1.state_dict().items(),
+                                m2.state_dict().items()):
+        assert ka == kb and torch.allclose(a, b), ka
+
+
+# -------------------------------------------------------------- D8 / D9 arms
+_STATS = {"T_s_mean": 200, "T_s_std": 30, "S_mean": 100, "S_std": 80,
+          "F_a_mean": 2, "F_a_std": 2}
+
+
+def _rollout_with_fa(m, fa):
+    torch.manual_seed(0)
+    K, H = 20, 30
+    Ts = 200 + 5 * torch.randn(2, K + H, 64)
+    S = 100 + torch.zeros(2, K + H, 64)
+    with torch.no_grad():
+        p, _ = m.rollout(Ts[:, :K], S, torch.full((2, K + H), fa),
+                         torch.linspace(-1.4, 1.4, 64))
+    return p
+
+
+@pytest.mark.parametrize("arm,uses_fa", [("gru", True), ("jepa", True),
+                                         ("gru_noforce", False)])
+def test_forcing_input_used_iff_expected(arm, uses_fa, p2_small):
+    m = build_model(arm, _STATS, 64, p2_small["arch"], seed=0).eval()
+    same = torch.allclose(_rollout_with_fa(m, 0.0), _rollout_with_fa(m, 5.0))
+    assert same != uses_fa
+
+
+def test_gru_noforce_matches_gru_except_forcing_input(p2_small):
+    g = build_model("gru", _STATS, 64, p2_small["arch"], seed=0)
+    n = build_model("gru_noforce", _STATS, 64, p2_small["arch"], seed=0)
+    assert n.cell.input_size == g.cell.input_size - 1
+    assert count_params(g) - count_params(n) == 3 * g.hidden   # F_a columns
+
+
+def test_jepa_target_encoder_is_ema_not_trained(p2_small):
+    m = build_model("jepa", _STATS, 64, p2_small["arch"], seed=0)
+    tgt = list(m.target_enc.parameters())
+    assert all(not p.requires_grad for p in tgt)
+    assert count_params(m) == sum(p.numel() for n_, p in m.named_parameters()
+                                  if not n_.startswith("target_enc."))
+    before = [p.clone() for p in tgt]
+    with torch.no_grad():
+        for p in m.enc.parameters():
+            p.add_(1.0)
+    m.ema_update()
+    dec = p2_small["arch"]["jepa"]["ema_decay"]
+    for b, t, o in zip(before, tgt, m.enc.parameters()):
+        assert torch.allclose(t, dec * b + (1 - dec) * o, atol=1e-6)
+
+
+def test_jepa_latent_loss_trains_and_reloads(p2_small, full_cfg, tmp_path):
+    import eval as evalmod
+    m, stats, info = train.train_one("jepa", "off", 1.0, 0, 0.1, p2_small,
+                                     full_cfg, "cpu", epochs=1, max_batches=2)
+    assert np.isfinite(info["val_loss"])
+    # the EMA target encoder moved off its initial copy of the online encoder
+    m0 = build_model("jepa", stats, 64, p2_small["arch"], seed=0)
+    assert not all(torch.allclose(a, b) for a, b in
+                   zip(m.target_enc.parameters(), m0.target_enc.parameters()))
+    train.save_run(str(tmp_path), m, stats, info, p2_small)
+    m2, *_ = evalmod.load_model(str(tmp_path), p2_small, full_cfg, "cpu")
+    for (k, a), b in zip(m.state_dict().items(), m2.state_dict().values()):
+        assert torch.allclose(a, b), k
 
 
 # -------------------------------------------------------------- hybrid ice init
@@ -362,3 +427,12 @@ def test_thresholds_blank_and_ebm_metric_labeled(tmp_path):
     analyze.write_report(hyps, {}, out_json=str(tmp_path / "a.json"),
                          out_md=str(md), ebm=analyze.ebm_metric_table(df))
     assert label in md.read_text()
+
+
+def test_sweep_grid_new_arms_physics_off_only():
+    import sweep
+    grid = sweep.enumerate_grid(train.load_phase2_config())
+    assert len(grid) == 450
+    for arm in ("gru_noforce", "jepa"):
+        runs = [g for g in grid if g[0] == arm]
+        assert len(runs) == 30 and {g[1] for g in runs} == {"off"}
