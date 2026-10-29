@@ -26,7 +26,7 @@ pip install -r requirements_phase2.txt   # numpy scipy pyyaml matplotlib pandas 
 ```
 python3 -m pytest tests/ -q
 ```
-Expected: `74 passed` (dataio + Checkpoint-A + split tests, Phase-2 tests, the
+Expected: `77 passed` (dataio + Checkpoint-A + split tests, Phase-2 tests, the
 end-to-end `tests/test_integration.py` on 4 tiny trajectories generated through
 `gen_data.py`, and a structure-only `diag_tier2.py` check; ~90 s on CPU). The Phase-2 tests cover: no hidden leakage, eval labels never imported by
 train/models, train-only normalization, param counts within 10%, physics residual
@@ -82,7 +82,7 @@ Ctrl-C and rerun — completed tags are skipped.
 
 ## 5. Analyze
 
-Fill `thresholds.yaml` first (H1/H2/H3 criteria). Then:
+`thresholds.yaml` is filled and committed (PREREG D10). Then:
 
 ```
 python3 analyze.py --results results.csv --thresholds thresholds.yaml

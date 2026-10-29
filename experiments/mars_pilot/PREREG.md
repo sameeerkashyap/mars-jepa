@@ -1,9 +1,10 @@
 # Pre-registration — Mars 1-D climate pilot (DESIGN ONLY)
 
-> **Status:** design pre-registration for the ML phase. **All hypothesis
-> thresholds are left BLANK (`____`) for the reviewer to fill and commit.**
-> No models have been trained; Checkpoint B (data generation) has not started.
-> Frozen design parameters below must not change after this file is committed.
+> **Status:** design pre-registration for the ML phase. **Hypothesis
+> thresholds and the statistical treatment were filled on 2026-10-26 (D10),
+> before any model was trained on generated data.** Machine-readable copy:
+> `thresholds.yaml`. Frozen design parameters below must not change after this
+> file is committed.
 
 ---
 
@@ -14,22 +15,31 @@ and the subsurface reservoir but keeps the CO2 frost clamp) helps a learned mode
 **extrapolate to unseen radiative forcings** on a Mars-like 1-D climate, relative
 to a pure data-driven model.
 
-### Hypotheses (criteria blank — reviewer to fill)
+### Hypotheses (criteria filled 2026-10-26; see §11 and D10)
 
 * **H1 (an OOD gap exists).** Pure data-driven models trained on in-distribution
   forcings degrade on out-of-distribution forcings.
-  * Supported if: Tier-2 error / Tier-1 error ratio ≥ `____`, on metric `____`.
+  * Supported if: Tier-2 error / Tier-1 error ratio ≥ **2.0**, on metric
+    **`polar_S_pinned`** (`t2_` / `t1_polar_winter_S_pinned`), mean over the pure
+    data-driven arms (GRU, RSSM, Transformer, JEPA; physics off) at the largest
+    data fraction.
 * **H2 (incomplete physics helps extrapolation).** Adding the EBM physics-residual
   loss improves OOD performance vs the same architecture with data loss only.
-  * Supported if: relative OOD-error reduction ≥ `____` on metric `____`,
-    significant across `____` dataset seeds.
+  * Supported if: relative OOD-error reduction (GRU physics-A vs GRU off, largest
+    fraction) ≥ **20%** on metric **`t2_polar_winter_S_pinned`**, with ≥ **10**
+    paired seeds, **and** the one-sided paired Wilcoxon signed-rank test survives
+    Holm correction at α = 0.05 (§11). Variant B is judged by the same criterion
+    as a labeled secondary hypothesis (H2-B).
 * **H3 (physics helps data efficiency / hybrid helps).** The physics prior (as a
   loss or as a hybrid backbone) reduces the data needed to reach a target error,
   and/or the hybrid arm beats both pure-data and physics-loss arms OOD.
-  * Supported if: `____`.
+  * Supported if **either** (a) GRU physics-A at fraction ≤ **0.3** reaches the
+    mean error of GRU off at fraction 1.0 (test: GRU-A < GRU-off, paired, at
+    fraction 0.3), **or** (b) mean hybrid error ≤ **0.8 ×** the best pure arm's
+    (test: hybrid < best pure arm, paired, at fraction 1.0); the route's test
+    p is Bonferroni-doubled and must survive Holm at α = 0.05 (§11).
 
-Primary and secondary **metrics** are defined in §6; the numeric thresholds in the
-`____` fields are the reviewer's to set before any training.
+Primary and secondary **metrics** are defined in §6 and D7.
 
 ---
 
@@ -141,6 +151,10 @@ All arms observe only {`T_s`, `S`, `F_a`}; all predict `T_s` trajectories.
 5. **Linear baseline — ridge / ARX linear state-space.** Added because the
    global-mean response is near-linear; if the linear model matches the nonlinear
    architectures on Tier 1, that is itself a finding and a necessary control.
+6. **No-forcing control — GRU without `F_a` (D8).** Same GRU, forcing input
+   removed. Control only; not in any hypothesis.
+7. **Pure data-driven — JEPA (D9).** Joint-embedding predictive model with a
+   temperature decoder. Counts as a pure data-driven arm in H1 and H3(b).
 
 Primary architecture comparisons for H2/H3: GRU and RSSM (and the hybrid). The
 `mismatch_scale = 0.25` exploratory world is run only for the **best** architecture
@@ -172,7 +186,7 @@ this via the frost mask).
 For each arm, train at several training-set fractions (grid to be fixed at
 generation, e.g. logarithmically spaced) and plot OOD error vs data fraction,
 with error bars across dataset seeds. H3's data-efficiency criterion uses these
-curves (threshold `____`).
+curves (fraction grid {0.1, 0.3, 1.0}; threshold 0.3, see H3).
 
 ---
 
@@ -198,18 +212,35 @@ curves (threshold `____`).
 
 ---
 
-## 11. Analysis plan (thresholds BLANK)
+## 11. Analysis plan (filled 2026-10-26, D10)
 
-| hypothesis | metric | split | criterion (reviewer fills) |
+All metrics are `polar_S_pinned` RMSE (K) per D7; "largest fraction" = 1.0.
+
+| hypothesis | metric | split | criterion |
 |---|---|---|---|
-| H1 | `____` | Tier 2 vs Tier 1 | `____` |
-| H2 (Variant A) | `____` | Tier 2 | `____` |
-| H2 (Variant B) | `____` | Tier 2 | `____` |
-| H3 | `____` | data-efficiency curve | `____` |
+| H1 | `t2_` / `t1_polar_winter_S_pinned` | Tier 2 vs Tier 1 | mean T2 / mean T1 over GRU, RSSM, Transformer, JEPA (off, fraction 1.0) ≥ 2.0 |
+| H2 (Variant A, main) | `t2_polar_winter_S_pinned` | Tier 2 | (GRU-off − GRU-A) / GRU-off ≥ 0.20, ≥ 10 paired seeds, Holm-adjusted p < 0.05 |
+| H2-B (Variant B, secondary) | `t2_polar_winter_S_pinned` | Tier 2 | same as H2 with GRU-B |
+| H3 | `t2_polar_winter_S_pinned` | data-efficiency curve / hybrid | (a) GRU-A first reaches GRU-off@1.0 at fraction ≤ 0.3, or (b) hybrid ≤ 0.8 × best pure arm; Holm-adjusted route p < 0.05 |
 
-Statistical treatment (test, correction, number of dataset seeds) to be fixed by
-the reviewer in the same commit. Analysis is run once, after training, on the
-held-out splits exactly as defined here.
+**Statistical treatment.**
+* Seeds: 10 per configuration (`config_phase2.yaml` sweep seeds 0–9), paired by
+  seed across configurations.
+* Test: one-sided exact Wilcoxon signed-rank on per-seed differences, alternative
+  "the physics / hybrid configuration has lower error". H2/H2-B: GRU-off vs
+  GRU-A/B at fraction 1.0. H3(a): GRU-off vs GRU-A at fraction 0.3. H3(b): best
+  pure arm (lowest mean) vs hybrid at fraction 1.0. H3's p = min(1, 2 × min p
+  over the routes whose effect criterion is met).
+* Correction: Holm across the family {H2, H2-B, H3} at α = 0.05. H1 is a
+  criterion-only check and is not in the tested family.
+* A hypothesis is **supported** only if its effect criterion is met **and** its
+  Holm-adjusted p < α; otherwise **not supported**. Missing data →
+  **inconclusive (no data)**.
+* Implementation: `analyze.py` (`evaluate_hypotheses`, `wilcoxon_greater`,
+  `holm`), tested in `tests/test_phase2.py`.
+
+Analysis is run once, after training, on the held-out splits exactly as defined
+here.
 
 ---
 
@@ -256,3 +287,26 @@ the time of any entry below; only fake-fixture smoke runs existed.
   same metric restricted to cells whose true control `T_s` ≤ T_frost + `PIN_TOL_K` (eval.py).
   No model had been evaluated on generated data at the time of this change.
 * **D7. Primary metric for H1 and H2. Intervention response error on S-hemisphere control-pinned winter cells, Tier 2 (polar_S_pinned). Secondary: polar_S (winter-only band) on Tier 2 and Tier 1. N-hemisphere metrics are reported as context only, because N unpins inside the training range and a linear extrapolation of the training response is within about 3% there. This choice was informed by diag_linearity.py (simulator-only, 5 seeds), run before any model was trained, in which a linear fit underpredicts the S control-pinned response by 35 to 42% and the S band response by 13 to 15%.
+
+* **D8 — No-forcing control arm added (2026-10-26).** A GRU identical to arm 1
+  with the forcing input `F_a` removed (`gru_noforce`; physics off; all three
+  data fractions; 10 seeds). Purpose: show that the forced models actually use
+  `F_a`, i.e. that the intervention response is not predictable from `T_s`/`S`
+  history alone. Control only; it enters no hypothesis. Added before any model
+  was trained on generated data.
+* **D9 — JEPA arm added (2026-10-26).** Joint-embedding predictive architecture:
+  context encoder, momentum-updated (EMA) target encoder, latent predictor, and a
+  decoder to `T_s` so it is scored on the same metrics. Same observables as all
+  arms; parameter count within 10% of the other neural arms; physics off; all
+  three fractions; 10 seeds. Counted as a pure data-driven arm in H1 and in
+  H3(b)'s "best pure arm", so the hybrid must also beat it. Added before any
+  model was trained on generated data.
+* **D10 — Thresholds and statistical treatment filled (2026-10-26).** §1 and §11
+  filled and `thresholds.yaml` set (H1 ratio 2.0; H2 reduction 0.20 with ≥ 10
+  seeds; H3 fraction ratio 0.3, hybrid margin 0.8; α = 0.05; one-sided paired
+  Wilcoxon; Holm over {H2, H2-B, H3}). `analyze.py` previously compared means
+  only (no test), and H2 "significant across N seeds" was just a seed count; it
+  now implements the test and correction above. H2-B (Variant B) was added as a
+  separately judged secondary hypothesis because §11 listed it while
+  `thresholds.yaml` did not. Set before any model was trained or evaluated on
+  generated data; no Tier-1 or Tier-2 model output existed at the time.

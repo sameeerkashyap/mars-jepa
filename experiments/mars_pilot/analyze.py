@@ -32,7 +32,7 @@ import matplotlib.pyplot as plt
 
 FIGDIR = "figures_phase2"
 EBM_METRIC_LABEL = ("EBM-residual constraint satisfaction (also the training objective for physics arms)")
-PURE_ARMS = ["gru", "rssm", "transformer"]
+PURE_ARMS = ["gru", "rssm", "transformer", "jepa"]   # jepa: PREREG D8
 PRIMARY_METRIC = "t2_polar_winter_S_pinned"          # PREREG D7
 BASELINE_CONFIGS = ("linear/off", "hybrid/off")
 
@@ -151,6 +151,70 @@ def _mean_metric(df, arm, physics, fraction, metric):
     return (float(np.mean(v)), len(v)) if len(v) else (np.nan, 0)
 
 
+def _paired(df, cfg_a, frac_a, cfg_b, frac_b, metric):
+    """Per-seed (a, b) value pairs; seeds missing or non-finite in either are
+    dropped.  cfg_* is (arm, physics)."""
+    def vals(cfg, frac):
+        g = df[(df["arm"] == cfg[0]) & (df["physics"] == cfg[1])
+               & np.isclose(df["fraction"], frac)]
+        return {int(sd): float(v) for sd, v in
+                zip(g["seed"], pd.to_numeric(g[metric], errors="coerce"))
+                if np.isfinite(v)}
+    va, vb = vals(cfg_a, frac_a), vals(cfg_b, frac_b)
+    seeds = sorted(set(va) & set(vb))
+    return np.array([va[s] for s in seeds]), np.array([vb[s] for s in seeds])
+
+
+def wilcoxon_greater(a, b):
+    """One-sided paired Wilcoxon signed-rank p-value for H1: a > b.
+    NaN when there are no pairs; 1.0 when every difference is zero."""
+    from scipy.stats import wilcoxon
+    d = np.asarray(a, float) - np.asarray(b, float)
+    if d.size == 0:
+        return np.nan
+    if np.all(d == 0):
+        return 1.0
+    return float(wilcoxon(d, alternative="greater").pvalue)
+
+
+def holm(pvals):
+    """Holm step-down adjusted p-values; NaN entries are treated as 1."""
+    p = np.array([1.0 if (q is None or not np.isfinite(q)) else q
+                  for q in pvals], float)
+    m = len(p)
+    adj = np.empty(m)
+    running = 0.0
+    for rank, i in enumerate(np.argsort(p)):
+        running = max(running, min(1.0, (m - rank) * p[i]))
+        adj[i] = running
+    return adj
+
+
+def _h2(df, thr, metric, maxf, variant, name):
+    r = {"name": name}
+    arch = thr.get("h2_arch") or "gru"
+    off_m, n_off = _mean_metric(df, arch, "off", maxf, metric)
+    phys_m, n_phys = _mean_metric(df, arch, variant, maxf, metric)
+    rel = (off_m - phys_m) / off_m if (off_m and np.isfinite(off_m)) else np.nan
+    off_v, phys_v = _paired(df, (arch, "off"), maxf, (arch, variant), maxf, metric)
+    r["arch"] = arch; r["variant"] = variant
+    r["observed_rel_reduction"] = float(rel) if np.isfinite(rel) else None
+    r["threshold"] = thr.get("h2_rel_reduction")
+    r["n_seeds"] = int(off_v.size)
+    r["p"] = wilcoxon_greater(off_v, phys_v)
+    min_seeds = thr.get("h2_min_seeds")
+    r["criterion_met"] = bool(np.isfinite(rel) and r["threshold"] is not None
+                              and rel >= r["threshold"]
+                              and min_seeds is not None
+                              and r["n_seeds"] >= min_seeds)
+    if min_seeds is None:
+        r["verdict"] = "inconclusive (threshold unset)"
+    else:
+        r["verdict"] = _verdict(rel, thr.get("h2_rel_reduction"), ">=",
+                                extra_ok=r["n_seeds"] >= min_seeds)
+    return r
+
+
 def evaluate_hypotheses(df, thr):
     out = {}
     maxf = df["fraction"].max()
@@ -168,30 +232,18 @@ def evaluate_hypotheses(df, thr):
     r["verdict"] = _verdict(ratio, thr.get("h1_ratio"), ">=")
     out["H1"] = r
 
-    # H2 (relative OOD reduction of physics vs off)
-    r = {"name": "H2 (physics helps extrapolation)"}
-    arch = thr.get("h2_arch") or "gru"
-    variant = thr.get("h2_variant") or "A"
-    off_m, n_off = _mean_metric(df, arch, "off", maxf, metric)
-    phys_m, n_phys = _mean_metric(df, arch, variant, maxf, metric)
-    rel = (off_m - phys_m) / off_m if (off_m and np.isfinite(off_m)) else np.nan
-    r["arch"] = arch; r["variant"] = variant
-    r["observed_rel_reduction"] = float(rel) if np.isfinite(rel) else None
-    r["threshold"] = thr.get("h2_rel_reduction")
-    r["n_seeds"] = int(min(n_off, n_phys))
-    min_seeds = thr.get("h2_min_seeds")
-    if min_seeds is None:
-        r["verdict"] = "inconclusive (threshold unset)"
-    else:
-        r["verdict"] = _verdict(rel, thr.get("h2_rel_reduction"), ">=",
-                                extra_ok=r["n_seeds"] >= min_seeds)
-    out["H2"] = r
+    # H2 (relative OOD reduction of physics vs off): main variant + secondary
+    out["H2"] = _h2(df, thr, metric, maxf, thr.get("h2_variant") or "A",
+                    "H2 (physics helps extrapolation)")
+    if thr.get("h2b_variant"):
+        out["H2B"] = _h2(df, thr, metric, maxf, thr["h2b_variant"],
+                         "H2-B (collocation variant; secondary)")
 
     # H3 (data efficiency + hybrid)
     r = {"name": "H3 (data efficiency / hybrid helps)"}
     arch = thr.get("h3_arch") or "gru"
     off_full, _ = _mean_metric(df, arch, "off", maxf, metric)
-    # smallest fraction at which physics=A reaches off_full
+    # (a) smallest fraction at which physics=A reaches off_full
     reach = None
     for f in sorted(df["fraction"].unique()):
         pm, _ = _mean_metric(df, arch, "A", f, metric)
@@ -201,20 +253,56 @@ def evaluate_hypotheses(df, thr):
     r["frac_ratio_threshold"] = thr.get("h3_frac_ratio")
     de_ok = (reach is not None and thr.get("h3_frac_ratio") is not None
              and reach <= thr["h3_frac_ratio"] * maxf)
-    # hybrid vs best pure
+    p_a = np.nan
+    if thr.get("h3_frac_ratio") is not None:
+        fracs = np.array(sorted(df["fraction"].unique()))
+        f_star = fracs[np.argmin(np.abs(fracs - thr["h3_frac_ratio"] * maxf))]
+        off_v, phys_v = _paired(df, (arch, "off"), f_star, (arch, "A"), f_star,
+                                metric)
+        p_a = wilcoxon_greater(off_v, phys_v)
+        r["test_fraction_a"] = float(f_star)
+    # (b) hybrid vs best pure
     hyb, _ = _mean_metric(df, "hybrid", "off", maxf, metric)
     pure = [_mean_metric(df, a, "off", maxf, metric)[0] for a in PURE_ARMS]
-    best_pure = np.nanmin(pure) if len(pure) else np.nan
+    best_pure = np.nanmin(pure) if np.any(np.isfinite(pure)) else np.nan
     margin = thr.get("h3_hybrid_margin")
-    hy_ok = (np.isfinite(hyb) and np.isfinite(best_pure) and margin is not None
-             and hyb <= margin * best_pure)
+    hy_ok = bool(np.isfinite(hyb) and np.isfinite(best_pure) and margin is not None
+                 and hyb <= margin * best_pure)
+    p_b = np.nan
+    if np.isfinite(best_pure):
+        best_arm = PURE_ARMS[int(np.nanargmin(pure))]
+        pure_v, hyb_v = _paired(df, (best_arm, "off"), maxf, ("hybrid", "off"),
+                                maxf, metric)
+        p_b = wilcoxon_greater(pure_v, hyb_v)
+        r["best_pure_arm"] = best_arm
     r["hybrid"] = float(hyb) if np.isfinite(hyb) else None
     r["best_pure"] = float(best_pure) if np.isfinite(best_pure) else None
+    r["p_a"], r["p_b"] = p_a, p_b
+    routes = [p for ok, p in ((de_ok, p_a), (hy_ok, p_b))
+              if ok and np.isfinite(p)]
+    r["p"] = min(1.0, 2 * min(routes)) if routes else np.nan
+    r["criterion_met"] = bool(de_ok or hy_ok)
     if thr.get("h3_frac_ratio") is None and margin is None:
         r["verdict"] = "inconclusive (threshold unset)"
     else:
         r["verdict"] = "supported" if (de_ok or hy_ok) else "not supported"
     out["H3"] = r
+
+    # Holm across the tested family; a criterion-level "supported" stands only
+    # if its adjusted p < alpha.  Without alpha the tested verdicts are unset.
+    family = [k for k in ("H2", "H2B", "H3") if k in out]
+    alpha = thr.get("alpha")
+    adj = holm([out[k]["p"] for k in family])
+    for k, a in zip(family, adj):
+        h = out[k]
+        h["p"] = None if not np.isfinite(h["p"]) else float(h["p"])
+        h["p_holm"] = float(a)
+        if alpha is None:
+            h["verdict"] = "inconclusive (threshold unset)"
+        elif h["verdict"] == "supported" and not a < alpha:
+            h["verdict"] = "not supported"
+    for k in ("p_a", "p_b"):
+        out["H3"][k] = None if not np.isfinite(out["H3"][k]) else float(out["H3"][k])
     return out
 
 
@@ -280,17 +368,19 @@ def write_report(hyps, figs, out_json="analysis_report.json",
                    "primary_vs_baselines": primary}, fh, indent=2)
     lines = ["# Phase-2 analysis report", "",
              "## PREREG hypotheses", "",
-             "| hypothesis | observed | threshold | verdict |",
-             "|---|---|---|---|"]
+             "| hypothesis | observed | threshold | p (one-sided) | p (Holm) "
+             "| verdict |",
+             "|---|---|---|---|---|---|"]
     for key, h in hyps.items():
         if key == "H1":
             obs = h.get("observed_ratio")
-        elif key == "H2":
+        elif key in ("H2", "H2B"):
             obs = h.get("observed_rel_reduction")
         else:
             obs = h.get("frac_physics_reaches_off_full")
         thr = h.get("threshold", h.get("frac_ratio_threshold"))
-        lines.append(f"| {h['name']} | {obs} | {thr} | {h['verdict']} |")
+        lines.append(f"| {h['name']} | {obs} | {thr} | {h.get('p', '-')} "
+                     f"| {h.get('p_holm', '-')} | {h['verdict']} |")
     if ebm and ebm["by_config"]:
         lines += ["", f"## {ebm['label']}", "",
                   "Mean normalized squared EBM residual of the model's forced "

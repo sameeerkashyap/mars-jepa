@@ -283,11 +283,69 @@ def test_calibrate_saves_curves_and_flags(p2_small, full_cfg):
     assert "still_decreasing_arms" in rep
 
 
-def test_thresholds_blank_and_ebm_metric_labeled(tmp_path):
-    import yaml, pandas as pd
-    import analyze, eval as evalmod
+def test_thresholds_filled():
+    import yaml
     thr = yaml.safe_load(open(os.path.join(ROOT, "thresholds.yaml")))
-    assert thr and all(v is None for v in thr.values())
+    assert thr and all(v is not None for v in thr.values())
+    assert thr["h1_metric"] == "t2_polar_winter_S_pinned"      # PREREG D7
+    assert thr["correction"] == "holm" and 0 < thr["alpha"] < 1
+
+
+def _hyp_rows(off, phys, hybrid, n_seeds=10):
+    """Fake results: gru off/A/B and hybrid at fractions 0.3 and 1.0."""
+    rows = []
+    for s in range(n_seeds):
+        for arm, p, v in (("gru", "off", off), ("gru", "A", phys),
+                          ("gru", "B", phys), ("hybrid", "off", hybrid)):
+            for f in (0.3, 1.0):
+                x = v + 0.01 * s + (0.5 if f < 1 else 0)
+                rows.append(dict(tag=f"{arm}_{p}_{f}_{s}", arm=arm, physics=p,
+                                 fraction=f, seed=s, status="ok",
+                                 t1_polar_winter_S_pinned=1.0,
+                                 t2_polar_winter_S_pinned=x))
+    return rows
+
+
+def test_hypotheses_paired_wilcoxon_holm(tmp_path):
+    import yaml, pandas as pd
+    import analyze
+    thr = yaml.safe_load(open(os.path.join(ROOT, "thresholds.yaml")))
+
+    def run(rows):
+        csv = tmp_path / "r.csv"
+        pd.DataFrame(rows).to_csv(csv, index=False)
+        return analyze.evaluate_hypotheses(analyze.load_results(str(csv)), thr)
+
+    # physics 50% better on every seed, hybrid 50% better than gru -> supported
+    h = run(_hyp_rows(off=4.0, phys=2.0, hybrid=2.0))
+    assert h["H1"]["verdict"] == "supported"                 # 4/1 >= 2
+    for k in ("H2", "H2B", "H3"):
+        assert h[k]["verdict"] == "supported", (k, h[k])
+        assert h[k]["p_holm"] < thr["alpha"]
+    # 5% improvement: below the 20% criterion even though p is tiny
+    h = run(_hyp_rows(off=4.0, phys=3.8, hybrid=3.8))
+    assert h["H2"]["verdict"] == "not supported" and h["H2"]["p"] < 0.01
+    assert h["H3"]["verdict"] == "not supported"
+    # large effect but too few seeds for the test to survive Holm
+    h = run(_hyp_rows(off=4.0, phys=2.0, hybrid=2.0, n_seeds=3))
+    assert h["H2"]["verdict"] == "not supported"             # n < h2_min_seeds
+    assert h["H3"]["verdict"] == "not supported"             # p_holm >= alpha
+
+
+def test_holm_and_wilcoxon_helpers():
+    import analyze
+    assert list(analyze.holm([0.01, 0.04, 0.03])) == pytest.approx([0.03, 0.06, 0.06])
+    assert list(analyze.holm([0.5, float("nan")])) == pytest.approx([1.0, 1.0])
+    assert analyze.wilcoxon_greater([2, 2], [2, 2]) == 1.0
+    assert np.isnan(analyze.wilcoxon_greater([], []))
+    assert analyze.wilcoxon_greater(np.arange(10) + 1.0, np.zeros(10)) \
+        == pytest.approx(1 / 1024)
+
+
+def test_thresholds_blank_and_ebm_metric_labeled(tmp_path):
+    import pandas as pd
+    import analyze, eval as evalmod
+    thr = {}                                     # unfilled thresholds
     label = ("EBM-residual constraint satisfaction "
              "(also the training objective for physics arms)")
     assert analyze.EBM_METRIC_LABEL == label == evalmod.EBM_METRIC_LABEL

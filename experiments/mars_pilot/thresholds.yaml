@@ -1,35 +1,47 @@
-# Hypothesis thresholds for the PREREG analysis.  THE REVIEWER FILLS THESE.
-# Every field is intentionally BLANK (YAML null).  analyze.py reports any
-# hypothesis whose threshold is blank as "inconclusive (threshold unset)".
-# No example values are given here on purpose.
+# Hypothesis thresholds for the PREREG analysis (PREREG.md sections 1, 11, D8-D10).
+# FILLED AND COMMITTED BEFORE ANY MODEL WAS TRAINED ON GENERATED DATA.
+# Do not edit after the sweep starts; any change is a logged deviation.
 #
-# Headline OOD metric per PREREG.md section 6: Tier-2 S-pole polar-winter
-# intervention-response RMSE (results.csv column t2_polar_winter_S).
-# PREREG D7 names the S control-pinned variant (t2_polar_winter_S_pinned) as the
-# primary metric for H1/H2; analyze.py also reports it descriptively vs LINEAR
-# and HYBRID (no thresholds).
+# Headline OOD metric (PREREG D7): Tier-2 S-hemisphere control-pinned
+# polar-winter intervention-response RMSE (results.csv t2_polar_winter_S_pinned).
+# Tier-1 counterpart for H1: t1_polar_winter_S_pinned.
+# All comparisons are at the largest data fraction unless stated otherwise.
 
 # H1: an OOD gap exists for pure data-driven models.
 #   supported if  mean(Tier-2 metric) / mean(Tier-1 metric)  >=  h1_ratio
-#   over the pure-data arms (gru/rssm/transformer, physics=off) at the largest
-#   data fraction.
-h1_ratio:
-h1_metric:                # t2_polar_winter_S_pinned | t2_polar_winter_S | t2_polar_winter_N | t2_resp_global
+#   over the pure-data arms (gru/rssm/transformer/jepa, physics=off).
+#   Criterion only; not part of the tested family.
+h1_ratio: 2.0
+h1_metric: t2_polar_winter_S_pinned
 
 # H2: incomplete physics helps extrapolation.
-#   supported if the relative OOD-error reduction of (h2_arch, h2_variant) vs
-#   (h2_arch, physics=off) on the headline metric >= h2_rel_reduction, at the
-#   largest data fraction, with at least h2_min_seeds dataset seeds.
-h2_rel_reduction:
-h2_arch:                  # gru | rssm | transformer
-h2_min_seeds:
-h2_variant:               # A (strict) | B (collocation)
+#   supported if the relative OOD-error reduction of (h2_arch, variant) vs
+#   (h2_arch, physics=off) >= h2_rel_reduction, with >= h2_min_seeds paired
+#   seeds, AND the Holm-adjusted one-sided paired test p < alpha.
+#   H2-A (h2_variant) is the main hypothesis; H2-B (h2b_variant) is a labeled
+#   secondary hypothesis judged by the same criterion.
+h2_rel_reduction: 0.20
+h2_arch: gru
+h2_min_seeds: 10
+h2_variant: A
+h2b_variant: B
 
 # H3: physics improves data efficiency and/or the hybrid wins OOD.
-#   (a) data efficiency: smallest fraction at which (h3_arch, physics=A) reaches
-#       the error of (h3_arch, off) at the largest fraction is
-#       <= h3_frac_ratio * largest fraction
-#   (b) hybrid: mean headline metric of hybrid <= h3_hybrid_margin * best pure arm
-h3_frac_ratio:
-h3_hybrid_margin:
-h3_arch:                  # gru | rssm | transformer
+#   (a) smallest fraction at which (h3_arch, A) reaches the mean error of
+#       (h3_arch, off) at the largest fraction is <= h3_frac_ratio * largest;
+#       test: (h3_arch, A) < (h3_arch, off), paired, at fraction
+#       h3_frac_ratio * largest.
+#   (b) mean hybrid <= h3_hybrid_margin * mean of the best pure arm;
+#       test: hybrid < best pure arm, paired, at the largest fraction.
+#   H3 p = min(1, 2 * min p over the routes whose criterion is met)
+#   (Bonferroni over the two routes); supported if that p survives Holm.
+h3_frac_ratio: 0.3
+h3_hybrid_margin: 0.8
+h3_arch: gru
+
+# Statistical treatment.
+#   test: one-sided Wilcoxon signed-rank (exact), paired by seed.
+#   correction: Holm across the family {H2-A, H2-B, H3} at level alpha.
+alpha: 0.05
+test: wilcoxon_paired_one_sided
+correction: holm

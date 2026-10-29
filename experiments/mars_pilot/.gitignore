@@ -1,6 +1,9 @@
-data/
+data/*
+!data/manifest.json
+!data/gen.log
 data_legacy/
 legacy/
 runs/
 __pycache__/
 *.pyc
+.pytest_cache/
