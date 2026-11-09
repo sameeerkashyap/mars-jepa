@@ -1,0 +1,6 @@
+# CPU runtime used for the registered pilot sweep on Python 3.11.
+numpy==2.1.3
+scipy==1.14.1
+PyYAML==6.0.2
+matplotlib==3.9.2
+pandas==2.2.3

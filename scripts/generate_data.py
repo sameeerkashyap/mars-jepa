@@ -3,7 +3,7 @@
 
 Usage
 -----
-    python scripts/generate_data.py --config configs/default.yaml
+    python -m scripts.generate_data --config configs/pi_jepa/default.yaml
 
 Writes a single compressed ``.npz`` shard into ``<data_dir>/<parameter>.npz``.
 This is the CPU-only Stage A step and can run as a separate Kubernetes Job
@@ -15,16 +15,16 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from marsworld.config import load_config
-from marsworld.data.solver import generate_dataset, save_dataset
-from marsworld.utils.logging import get_logger, set_seed
+from config import load_config
+from data.solver import generate_dataset, save_dataset
+from scripts.utils import get_logger, set_seed
 
 logger = get_logger("generate_data")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", default="configs/default.yaml")
+    parser.add_argument("--config", default="configs/pi_jepa/default.yaml")
     args = parser.parse_args()
 
     cfg = load_config(args.config)

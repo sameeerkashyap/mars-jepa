@@ -1,5 +1,9 @@
 # Kubernetes deployment
 
+For the full heating-pilot experiment, use the
+[Nautilus sweep configuration](nautilus/README.md). It generates data, runs the
+450-model comparison, and saves results on a persistent volume.
+
 Two-stage pipeline that runs on any cluster with a GPU node pool.
 
 ## 1. Build & push the image

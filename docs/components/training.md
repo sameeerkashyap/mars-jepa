@@ -6,8 +6,8 @@ rollout, EMA target updates and checkpointing, and runs unchanged on CPU or GPU.
 
 ## Composite loss
 
-::: marsworld.training.losses
+::: training.losses
 
 ## Trainer
 
-::: marsworld.training.trainer
+::: training.trainer

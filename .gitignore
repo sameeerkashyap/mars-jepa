@@ -9,9 +9,19 @@ venv/
 env/
 
 # Data & artifacts
-data/
-checkpoints/
+/data/synthetic/**
+!/data/synthetic/README.md
+!/data/synthetic/pi_jepa/
+!/data/synthetic/pi_jepa/README.md
+!/data/synthetic/pilot/
+!/data/synthetic/pilot/manifest.json
+!/data/synthetic/pilot/gen.log
+/data/arco_mars/**
+!/data/arco_mars/README.md
+/checkpoints/
+/outputs/
 *.npz
+!/tests/pilot/fixtures/regression_ref.npz
 *.pt
 
 # Docs build
@@ -24,3 +34,4 @@ site/
 
 # pytest
 .pytest_cache/
+.ruff_cache/

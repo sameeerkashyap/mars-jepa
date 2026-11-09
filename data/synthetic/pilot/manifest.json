@@ -1,0 +1,3494 @@
+{
+  "created_utc": "2026-10-18T04:33:06.232511+00:00",
+  "frozen_design": {
+    "D": 0.1,
+    "n": 64,
+    "dt_sol": 0.05,
+    "mismatch_scale": 0.1,
+    "X": 5.0,
+    "spin_years": 3,
+    "record_years": 3
+  },
+  "seed_ranges": {
+    "main": [
+      1000,
+      1999
+    ],
+    "calibration": [
+      3000,
+      3999
+    ],
+    "held_out_reserved": [
+      9000,
+      9999
+    ]
+  },
+  "observable_keys": [
+    "t_sol",
+    "Ls",
+    "lat",
+    "x",
+    "w",
+    "T_s",
+    "S",
+    "F_a"
+  ],
+  "eval_key_prefix": "eval__",
+  "hidden_key_prefix": "hidden__",
+  "forcing_definitions": "Forcing schedules F_a(t), t in sols over the recorded window [0, T] with\nT = record_years * year_sols.  A = stratified magnitude (W/m^2); timing\nparameters are drawn deterministically from the trajectory seed.\n\n  constant : F_a(t) = A                                   (for all t)\n  ramp     : F_a(t) = A * min(t / T, 1)                   (linear 0 -> A over T)\n  step     : F_a(t) = A if t >= t_step else 0 ;\n             t_step = U(0.3, 0.6) * T                      (seed-drawn)\n  pulse    : F_a(t) = A if t0 <= t <= t1 else 0 ;\n             t0 = U(0.20, 0.40) * T, t1 = U(0.60, 0.80) * T (seed-drawn)\n",
+  "note_held_out": "seeds 9000-9999 reserved and intentionally NOT generated",
+  "wall_clock_sec": 535.2,
+  "splits": {
+    "main/train": {
+      "mag_range": [
+        0.0,
+        5.0
+      ],
+      "shapes": [
+        "constant",
+        "ramp"
+      ],
+      "seeds": [
+        1000,
+        1001,
+        1002,
+        1003,
+        1004,
+        1005,
+        1006,
+        1007,
+        1008,
+        1009,
+        1010,
+        1011,
+        1012,
+        1013,
+        1014,
+        1015,
+        1016,
+        1017,
+        1018,
+        1019,
+        1020,
+        1021,
+        1022,
+        1023,
+        1024,
+        1025,
+        1026,
+        1027,
+        1028,
+        1029,
+        1030,
+        1031,
+        1032,
+        1033,
+        1034,
+        1035,
+        1036,
+        1037,
+        1038,
+        1039,
+        1040,
+        1041,
+        1042,
+        1043,
+        1044,
+        1045,
+        1046,
+        1047,
+        1048,
+        1049,
+        1050,
+        1051,
+        1052,
+        1053,
+        1054,
+        1055,
+        1056,
+        1057,
+        1058,
+        1059,
+        1060,
+        1061,
+        1062,
+        1063,
+        1064,
+        1065,
+        1066,
+        1067,
+        1068,
+        1069,
+        1070,
+        1071,
+        1072,
+        1073,
+        1074,
+        1075,
+        1076,
+        1077,
+        1078,
+        1079,
+        1080,
+        1081,
+        1082,
+        1083,
+        1084,
+        1085,
+        1086,
+        1087,
+        1088,
+        1089,
+        1090,
+        1091,
+        1092,
+        1093,
+        1094,
+        1095,
+        1096,
+        1097,
+        1098,
+        1099
+      ],
+      "files": [
+        "main/train/traj_1000.npz",
+        "main/train/traj_1001.npz",
+        "main/train/traj_1002.npz",
+        "main/train/traj_1003.npz",
+        "main/train/traj_1004.npz",
+        "main/train/traj_1005.npz",
+        "main/train/traj_1006.npz",
+        "main/train/traj_1007.npz",
+        "main/train/traj_1008.npz",
+        "main/train/traj_1009.npz",
+        "main/train/traj_1010.npz",
+        "main/train/traj_1011.npz",
+        "main/train/traj_1012.npz",
+        "main/train/traj_1013.npz",
+        "main/train/traj_1014.npz",
+        "main/train/traj_1015.npz",
+        "main/train/traj_1016.npz",
+        "main/train/traj_1017.npz",
+        "main/train/traj_1018.npz",
+        "main/train/traj_1019.npz",
+        "main/train/traj_1020.npz",
+        "main/train/traj_1021.npz",
+        "main/train/traj_1022.npz",
+        "main/train/traj_1023.npz",
+        "main/train/traj_1024.npz",
+        "main/train/traj_1025.npz",
+        "main/train/traj_1026.npz",
+        "main/train/traj_1027.npz",
+        "main/train/traj_1028.npz",
+        "main/train/traj_1029.npz",
+        "main/train/traj_1030.npz",
+        "main/train/traj_1031.npz",
+        "main/train/traj_1032.npz",
+        "main/train/traj_1033.npz",
+        "main/train/traj_1034.npz",
+        "main/train/traj_1035.npz",
+        "main/train/traj_1036.npz",
+        "main/train/traj_1037.npz",
+        "main/train/traj_1038.npz",
+        "main/train/traj_1039.npz",
+        "main/train/traj_1040.npz",
+        "main/train/traj_1041.npz",
+        "main/train/traj_1042.npz",
+        "main/train/traj_1043.npz",
+        "main/train/traj_1044.npz",
+        "main/train/traj_1045.npz",
+        "main/train/traj_1046.npz",
+        "main/train/traj_1047.npz",
+        "main/train/traj_1048.npz",
+        "main/train/traj_1049.npz",
+        "main/train/traj_1050.npz",
+        "main/train/traj_1051.npz",
+        "main/train/traj_1052.npz",
+        "main/train/traj_1053.npz",
+        "main/train/traj_1054.npz",
+        "main/train/traj_1055.npz",
+        "main/train/traj_1056.npz",
+        "main/train/traj_1057.npz",
+        "main/train/traj_1058.npz",
+        "main/train/traj_1059.npz",
+        "main/train/traj_1060.npz",
+        "main/train/traj_1061.npz",
+        "main/train/traj_1062.npz",
+        "main/train/traj_1063.npz",
+        "main/train/traj_1064.npz",
+        "main/train/traj_1065.npz",
+        "main/train/traj_1066.npz",
+        "main/train/traj_1067.npz",
+        "main/train/traj_1068.npz",
+        "main/train/traj_1069.npz",
+        "main/train/traj_1070.npz",
+        "main/train/traj_1071.npz",
+        "main/train/traj_1072.npz",
+        "main/train/traj_1073.npz",
+        "main/train/traj_1074.npz",
+        "main/train/traj_1075.npz",
+        "main/train/traj_1076.npz",
+        "main/train/traj_1077.npz",
+        "main/train/traj_1078.npz",
+        "main/train/traj_1079.npz",
+        "main/train/traj_1080.npz",
+        "main/train/traj_1081.npz",
+        "main/train/traj_1082.npz",
+        "main/train/traj_1083.npz",
+        "main/train/traj_1084.npz",
+        "main/train/traj_1085.npz",
+        "main/train/traj_1086.npz",
+        "main/train/traj_1087.npz",
+        "main/train/traj_1088.npz",
+        "main/train/traj_1089.npz",
+        "main/train/traj_1090.npz",
+        "main/train/traj_1091.npz",
+        "main/train/traj_1092.npz",
+        "main/train/traj_1093.npz",
+        "main/train/traj_1094.npz",
+        "main/train/traj_1095.npz",
+        "main/train/traj_1096.npz",
+        "main/train/traj_1097.npz",
+        "main/train/traj_1098.npz",
+        "main/train/traj_1099.npz"
+      ],
+      "count": 100
+    },
+    "main/val": {
+      "mag_range": [
+        0.0,
+        5.0
+      ],
+      "shapes": [
+        "constant",
+        "ramp"
+      ],
+      "seeds": [
+        1100,
+        1101,
+        1102,
+        1103,
+        1104,
+        1105,
+        1106,
+        1107,
+        1108,
+        1109,
+        1110,
+        1111,
+        1112,
+        1113,
+        1114,
+        1115,
+        1116,
+        1117,
+        1118,
+        1119
+      ],
+      "files": [
+        "main/val/traj_1100.npz",
+        "main/val/traj_1101.npz",
+        "main/val/traj_1102.npz",
+        "main/val/traj_1103.npz",
+        "main/val/traj_1104.npz",
+        "main/val/traj_1105.npz",
+        "main/val/traj_1106.npz",
+        "main/val/traj_1107.npz",
+        "main/val/traj_1108.npz",
+        "main/val/traj_1109.npz",
+        "main/val/traj_1110.npz",
+        "main/val/traj_1111.npz",
+        "main/val/traj_1112.npz",
+        "main/val/traj_1113.npz",
+        "main/val/traj_1114.npz",
+        "main/val/traj_1115.npz",
+        "main/val/traj_1116.npz",
+        "main/val/traj_1117.npz",
+        "main/val/traj_1118.npz",
+        "main/val/traj_1119.npz"
+      ],
+      "count": 20
+    },
+    "main/test_tier1": {
+      "mag_range": [
+        0.0,
+        5.0
+      ],
+      "shapes": [
+        "step",
+        "pulse"
+      ],
+      "seeds": [
+        1200,
+        1201,
+        1202,
+        1203,
+        1204,
+        1205,
+        1206,
+        1207,
+        1208,
+        1209,
+        1210,
+        1211,
+        1212,
+        1213,
+        1214,
+        1215,
+        1216,
+        1217,
+        1218,
+        1219
+      ],
+      "files": [
+        "main/test_tier1/traj_1200.npz",
+        "main/test_tier1/traj_1201.npz",
+        "main/test_tier1/traj_1202.npz",
+        "main/test_tier1/traj_1203.npz",
+        "main/test_tier1/traj_1204.npz",
+        "main/test_tier1/traj_1205.npz",
+        "main/test_tier1/traj_1206.npz",
+        "main/test_tier1/traj_1207.npz",
+        "main/test_tier1/traj_1208.npz",
+        "main/test_tier1/traj_1209.npz",
+        "main/test_tier1/traj_1210.npz",
+        "main/test_tier1/traj_1211.npz",
+        "main/test_tier1/traj_1212.npz",
+        "main/test_tier1/traj_1213.npz",
+        "main/test_tier1/traj_1214.npz",
+        "main/test_tier1/traj_1215.npz",
+        "main/test_tier1/traj_1216.npz",
+        "main/test_tier1/traj_1217.npz",
+        "main/test_tier1/traj_1218.npz",
+        "main/test_tier1/traj_1219.npz"
+      ],
+      "count": 20
+    },
+    "main/test_tier2": {
+      "mag_range": [
+        8.0,
+        10.0
+      ],
+      "shapes": [
+        "constant"
+      ],
+      "seeds": [
+        1300,
+        1301,
+        1302,
+        1303,
+        1304,
+        1305,
+        1306,
+        1307,
+        1308,
+        1309,
+        1310,
+        1311,
+        1312,
+        1313,
+        1314,
+        1315,
+        1316,
+        1317,
+        1318,
+        1319
+      ],
+      "files": [
+        "main/test_tier2/traj_1300.npz",
+        "main/test_tier2/traj_1301.npz",
+        "main/test_tier2/traj_1302.npz",
+        "main/test_tier2/traj_1303.npz",
+        "main/test_tier2/traj_1304.npz",
+        "main/test_tier2/traj_1305.npz",
+        "main/test_tier2/traj_1306.npz",
+        "main/test_tier2/traj_1307.npz",
+        "main/test_tier2/traj_1308.npz",
+        "main/test_tier2/traj_1309.npz",
+        "main/test_tier2/traj_1310.npz",
+        "main/test_tier2/traj_1311.npz",
+        "main/test_tier2/traj_1312.npz",
+        "main/test_tier2/traj_1313.npz",
+        "main/test_tier2/traj_1314.npz",
+        "main/test_tier2/traj_1315.npz",
+        "main/test_tier2/traj_1316.npz",
+        "main/test_tier2/traj_1317.npz",
+        "main/test_tier2/traj_1318.npz",
+        "main/test_tier2/traj_1319.npz"
+      ],
+      "count": 20
+    },
+    "calibration/train": {
+      "mag_range": [
+        0.0,
+        5.0
+      ],
+      "shapes": [
+        "constant",
+        "ramp"
+      ],
+      "seeds": [
+        3000,
+        3001,
+        3002,
+        3003,
+        3004,
+        3005,
+        3006,
+        3007,
+        3008,
+        3009,
+        3010,
+        3011,
+        3012,
+        3013,
+        3014,
+        3015,
+        3016,
+        3017,
+        3018,
+        3019,
+        3020,
+        3021,
+        3022,
+        3023,
+        3024,
+        3025,
+        3026,
+        3027,
+        3028,
+        3029,
+        3030,
+        3031,
+        3032,
+        3033,
+        3034,
+        3035,
+        3036,
+        3037,
+        3038,
+        3039
+      ],
+      "files": [
+        "calibration/train/traj_3000.npz",
+        "calibration/train/traj_3001.npz",
+        "calibration/train/traj_3002.npz",
+        "calibration/train/traj_3003.npz",
+        "calibration/train/traj_3004.npz",
+        "calibration/train/traj_3005.npz",
+        "calibration/train/traj_3006.npz",
+        "calibration/train/traj_3007.npz",
+        "calibration/train/traj_3008.npz",
+        "calibration/train/traj_3009.npz",
+        "calibration/train/traj_3010.npz",
+        "calibration/train/traj_3011.npz",
+        "calibration/train/traj_3012.npz",
+        "calibration/train/traj_3013.npz",
+        "calibration/train/traj_3014.npz",
+        "calibration/train/traj_3015.npz",
+        "calibration/train/traj_3016.npz",
+        "calibration/train/traj_3017.npz",
+        "calibration/train/traj_3018.npz",
+        "calibration/train/traj_3019.npz",
+        "calibration/train/traj_3020.npz",
+        "calibration/train/traj_3021.npz",
+        "calibration/train/traj_3022.npz",
+        "calibration/train/traj_3023.npz",
+        "calibration/train/traj_3024.npz",
+        "calibration/train/traj_3025.npz",
+        "calibration/train/traj_3026.npz",
+        "calibration/train/traj_3027.npz",
+        "calibration/train/traj_3028.npz",
+        "calibration/train/traj_3029.npz",
+        "calibration/train/traj_3030.npz",
+        "calibration/train/traj_3031.npz",
+        "calibration/train/traj_3032.npz",
+        "calibration/train/traj_3033.npz",
+        "calibration/train/traj_3034.npz",
+        "calibration/train/traj_3035.npz",
+        "calibration/train/traj_3036.npz",
+        "calibration/train/traj_3037.npz",
+        "calibration/train/traj_3038.npz",
+        "calibration/train/traj_3039.npz"
+      ],
+      "count": 40
+    },
+    "calibration/val": {
+      "mag_range": [
+        0.0,
+        5.0
+      ],
+      "shapes": [
+        "constant",
+        "ramp"
+      ],
+      "seeds": [
+        3100,
+        3101,
+        3102,
+        3103,
+        3104,
+        3105,
+        3106,
+        3107,
+        3108,
+        3109
+      ],
+      "files": [
+        "calibration/val/traj_3100.npz",
+        "calibration/val/traj_3101.npz",
+        "calibration/val/traj_3102.npz",
+        "calibration/val/traj_3103.npz",
+        "calibration/val/traj_3104.npz",
+        "calibration/val/traj_3105.npz",
+        "calibration/val/traj_3106.npz",
+        "calibration/val/traj_3107.npz",
+        "calibration/val/traj_3108.npz",
+        "calibration/val/traj_3109.npz"
+      ],
+      "count": 10
+    }
+  },
+  "trajectories": [
+    {
+      "id": "main/train/1000",
+      "family": "main",
+      "split": "train",
+      "seed": 1000,
+      "shape": "constant",
+      "magnitude": 0.05664221704931602,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1000.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1001",
+      "family": "main",
+      "split": "train",
+      "seed": 1001,
+      "shape": "ramp",
+      "magnitude": 0.02841021500382367,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1001.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1002",
+      "family": "main",
+      "split": "train",
+      "seed": 1002,
+      "shape": "constant",
+      "magnitude": 0.1707933203732465,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1002.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1003",
+      "family": "main",
+      "split": "train",
+      "seed": 1003,
+      "shape": "ramp",
+      "magnitude": 0.19121499021315463,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1003.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1004",
+      "family": "main",
+      "split": "train",
+      "seed": 1004,
+      "shape": "constant",
+      "magnitude": 0.2536783397070688,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1004.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1005",
+      "family": "main",
+      "split": "train",
+      "seed": 1005,
+      "shape": "ramp",
+      "magnitude": 0.27143566664052793,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1005.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1006",
+      "family": "main",
+      "split": "train",
+      "seed": 1006,
+      "shape": "constant",
+      "magnitude": 0.33438067175873193,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1006.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1007",
+      "family": "main",
+      "split": "train",
+      "seed": 1007,
+      "shape": "ramp",
+      "magnitude": 0.37121160052948965,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1007.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1008",
+      "family": "main",
+      "split": "train",
+      "seed": 1008,
+      "shape": "constant",
+      "magnitude": 0.43120256036370863,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1008.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1009",
+      "family": "main",
+      "split": "train",
+      "seed": 1009,
+      "shape": "ramp",
+      "magnitude": 0.4887558237027695,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1009.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1010",
+      "family": "main",
+      "split": "train",
+      "seed": 1010,
+      "shape": "constant",
+      "magnitude": 0.5061937372704884,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1010.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1011",
+      "family": "main",
+      "split": "train",
+      "seed": 1011,
+      "shape": "ramp",
+      "magnitude": 0.5922597190856653,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1011.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1012",
+      "family": "main",
+      "split": "train",
+      "seed": 1012,
+      "shape": "constant",
+      "magnitude": 0.6165389659189919,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1012.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1013",
+      "family": "main",
+      "split": "train",
+      "seed": 1013,
+      "shape": "ramp",
+      "magnitude": 0.6238585832113785,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1013.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1014",
+      "family": "main",
+      "split": "train",
+      "seed": 1014,
+      "shape": "constant",
+      "magnitude": 0.7629789704505446,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1014.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1015",
+      "family": "main",
+      "split": "train",
+      "seed": 1015,
+      "shape": "ramp",
+      "magnitude": 0.719539151572655,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1015.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1016",
+      "family": "main",
+      "split": "train",
+      "seed": 1016,
+      "shape": "constant",
+      "magnitude": 0.8820696145473952,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1016.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1017",
+      "family": "main",
+      "split": "train",
+      "seed": 1017,
+      "shape": "ramp",
+      "magnitude": 0.8058836132271846,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1017.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1018",
+      "family": "main",
+      "split": "train",
+      "seed": 1018,
+      "shape": "constant",
+      "magnitude": 0.9585230368522994,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1018.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1019",
+      "family": "main",
+      "split": "train",
+      "seed": 1019,
+      "shape": "ramp",
+      "magnitude": 0.9358784973209567,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1019.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1020",
+      "family": "main",
+      "split": "train",
+      "seed": 1020,
+      "shape": "constant",
+      "magnitude": 1.0572605798126058,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1020.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1021",
+      "family": "main",
+      "split": "train",
+      "seed": 1021,
+      "shape": "ramp",
+      "magnitude": 1.0857682189835054,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1021.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1022",
+      "family": "main",
+      "split": "train",
+      "seed": 1022,
+      "shape": "constant",
+      "magnitude": 1.130597114227764,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1022.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1023",
+      "family": "main",
+      "split": "train",
+      "seed": 1023,
+      "shape": "ramp",
+      "magnitude": 1.1842826150338766,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1023.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1024",
+      "family": "main",
+      "split": "train",
+      "seed": 1024,
+      "shape": "constant",
+      "magnitude": 1.2083994225407575,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1024.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1025",
+      "family": "main",
+      "split": "train",
+      "seed": 1025,
+      "shape": "ramp",
+      "magnitude": 1.2933759725997156,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1025.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1026",
+      "family": "main",
+      "split": "train",
+      "seed": 1026,
+      "shape": "constant",
+      "magnitude": 1.3568881127239854,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1026.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1027",
+      "family": "main",
+      "split": "train",
+      "seed": 1027,
+      "shape": "ramp",
+      "magnitude": 1.323120625411057,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1027.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1028",
+      "family": "main",
+      "split": "train",
+      "seed": 1028,
+      "shape": "constant",
+      "magnitude": 1.4265828322614817,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1028.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1029",
+      "family": "main",
+      "split": "train",
+      "seed": 1029,
+      "shape": "ramp",
+      "magnitude": 1.483140843475703,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1029.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1030",
+      "family": "main",
+      "split": "train",
+      "seed": 1030,
+      "shape": "constant",
+      "magnitude": 1.5985172146297821,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1030.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1031",
+      "family": "main",
+      "split": "train",
+      "seed": 1031,
+      "shape": "ramp",
+      "magnitude": 1.5543240759930665,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1031.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1032",
+      "family": "main",
+      "split": "train",
+      "seed": 1032,
+      "shape": "constant",
+      "magnitude": 1.6452802425974713,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1032.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1033",
+      "family": "main",
+      "split": "train",
+      "seed": 1033,
+      "shape": "ramp",
+      "magnitude": 1.6511416759555562,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1033.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1034",
+      "family": "main",
+      "split": "train",
+      "seed": 1034,
+      "shape": "constant",
+      "magnitude": 1.733319647207518,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1034.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1035",
+      "family": "main",
+      "split": "train",
+      "seed": 1035,
+      "shape": "ramp",
+      "magnitude": 1.7044981650006366,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1035.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1036",
+      "family": "main",
+      "split": "train",
+      "seed": 1036,
+      "shape": "constant",
+      "magnitude": 1.8600058767767937,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1036.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1037",
+      "family": "main",
+      "split": "train",
+      "seed": 1037,
+      "shape": "ramp",
+      "magnitude": 1.8613434923034575,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1037.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1038",
+      "family": "main",
+      "split": "train",
+      "seed": 1038,
+      "shape": "constant",
+      "magnitude": 1.974299937133754,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1038.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1039",
+      "family": "main",
+      "split": "train",
+      "seed": 1039,
+      "shape": "ramp",
+      "magnitude": 1.9422845293941602,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1039.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1040",
+      "family": "main",
+      "split": "train",
+      "seed": 1040,
+      "shape": "constant",
+      "magnitude": 2.009017793523989,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1040.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1041",
+      "family": "main",
+      "split": "train",
+      "seed": 1041,
+      "shape": "ramp",
+      "magnitude": 2.0940136814688435,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1041.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1042",
+      "family": "main",
+      "split": "train",
+      "seed": 1042,
+      "shape": "constant",
+      "magnitude": 2.159519350597669,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1042.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1043",
+      "family": "main",
+      "split": "train",
+      "seed": 1043,
+      "shape": "ramp",
+      "magnitude": 2.139751496676258,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1043.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1044",
+      "family": "main",
+      "split": "train",
+      "seed": 1044,
+      "shape": "constant",
+      "magnitude": 2.29164451784298,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1044.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1045",
+      "family": "main",
+      "split": "train",
+      "seed": 1045,
+      "shape": "ramp",
+      "magnitude": 2.2007871293761525,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1045.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1046",
+      "family": "main",
+      "split": "train",
+      "seed": 1046,
+      "shape": "constant",
+      "magnitude": 2.395280275144768,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1046.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1047",
+      "family": "main",
+      "split": "train",
+      "seed": 1047,
+      "shape": "ramp",
+      "magnitude": 2.300693973982072,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1047.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1048",
+      "family": "main",
+      "split": "train",
+      "seed": 1048,
+      "shape": "constant",
+      "magnitude": 2.410776851431991,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1048.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1049",
+      "family": "main",
+      "split": "train",
+      "seed": 1049,
+      "shape": "ramp",
+      "magnitude": 2.456271792206755,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1049.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1050",
+      "family": "main",
+      "split": "train",
+      "seed": 1050,
+      "shape": "constant",
+      "magnitude": 2.565443212823231,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1050.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1051",
+      "family": "main",
+      "split": "train",
+      "seed": 1051,
+      "shape": "ramp",
+      "magnitude": 2.583553887994312,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1051.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1052",
+      "family": "main",
+      "split": "train",
+      "seed": 1052,
+      "shape": "constant",
+      "magnitude": 2.680904096005838,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1052.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1053",
+      "family": "main",
+      "split": "train",
+      "seed": 1053,
+      "shape": "ramp",
+      "magnitude": 2.6958499781044787,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1053.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1054",
+      "family": "main",
+      "split": "train",
+      "seed": 1054,
+      "shape": "constant",
+      "magnitude": 2.737206424298007,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1054.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1055",
+      "family": "main",
+      "split": "train",
+      "seed": 1055,
+      "shape": "ramp",
+      "magnitude": 2.7309935207198115,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1055.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1056",
+      "family": "main",
+      "split": "train",
+      "seed": 1056,
+      "shape": "constant",
+      "magnitude": 2.891119772178405,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1056.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1057",
+      "family": "main",
+      "split": "train",
+      "seed": 1057,
+      "shape": "ramp",
+      "magnitude": 2.8982216078723115,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1057.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1058",
+      "family": "main",
+      "split": "train",
+      "seed": 1058,
+      "shape": "constant",
+      "magnitude": 2.9388175284636726,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1058.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1059",
+      "family": "main",
+      "split": "train",
+      "seed": 1059,
+      "shape": "ramp",
+      "magnitude": 2.9661295723513232,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1059.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1060",
+      "family": "main",
+      "split": "train",
+      "seed": 1060,
+      "shape": "constant",
+      "magnitude": 3.0399220061646655,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1060.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1061",
+      "family": "main",
+      "split": "train",
+      "seed": 1061,
+      "shape": "ramp",
+      "magnitude": 3.068967529802391,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1061.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1062",
+      "family": "main",
+      "split": "train",
+      "seed": 1062,
+      "shape": "constant",
+      "magnitude": 3.175820160316899,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1062.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1063",
+      "family": "main",
+      "split": "train",
+      "seed": 1063,
+      "shape": "ramp",
+      "magnitude": 3.1936354268666256,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1063.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1064",
+      "family": "main",
+      "split": "train",
+      "seed": 1064,
+      "shape": "constant",
+      "magnitude": 3.217962598217622,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1064.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1065",
+      "family": "main",
+      "split": "train",
+      "seed": 1065,
+      "shape": "ramp",
+      "magnitude": 3.274185010033235,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1065.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1066",
+      "family": "main",
+      "split": "train",
+      "seed": 1066,
+      "shape": "constant",
+      "magnitude": 3.304458333078772,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1066.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1067",
+      "family": "main",
+      "split": "train",
+      "seed": 1067,
+      "shape": "ramp",
+      "magnitude": 3.3786776896674557,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1067.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1068",
+      "family": "main",
+      "split": "train",
+      "seed": 1068,
+      "shape": "constant",
+      "magnitude": 3.4601857158015044,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1068.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1069",
+      "family": "main",
+      "split": "train",
+      "seed": 1069,
+      "shape": "ramp",
+      "magnitude": 3.4318857062670394,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1069.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1070",
+      "family": "main",
+      "split": "train",
+      "seed": 1070,
+      "shape": "constant",
+      "magnitude": 3.5521599449456436,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1070.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1071",
+      "family": "main",
+      "split": "train",
+      "seed": 1071,
+      "shape": "ramp",
+      "magnitude": 3.512312380416936,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1071.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1072",
+      "family": "main",
+      "split": "train",
+      "seed": 1072,
+      "shape": "constant",
+      "magnitude": 3.691169467315949,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1072.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1073",
+      "family": "main",
+      "split": "train",
+      "seed": 1073,
+      "shape": "ramp",
+      "magnitude": 3.6568277391567765,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1073.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1074",
+      "family": "main",
+      "split": "train",
+      "seed": 1074,
+      "shape": "constant",
+      "magnitude": 3.7444565816251405,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1074.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1075",
+      "family": "main",
+      "split": "train",
+      "seed": 1075,
+      "shape": "ramp",
+      "magnitude": 3.7902252712357782,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1075.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1076",
+      "family": "main",
+      "split": "train",
+      "seed": 1076,
+      "shape": "constant",
+      "magnitude": 3.8825777932752796,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1076.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1077",
+      "family": "main",
+      "split": "train",
+      "seed": 1077,
+      "shape": "ramp",
+      "magnitude": 3.8635056112233475,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1077.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1078",
+      "family": "main",
+      "split": "train",
+      "seed": 1078,
+      "shape": "constant",
+      "magnitude": 3.9737127255765508,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1078.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1079",
+      "family": "main",
+      "split": "train",
+      "seed": 1079,
+      "shape": "ramp",
+      "magnitude": 3.9962190795037653,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1079.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1080",
+      "family": "main",
+      "split": "train",
+      "seed": 1080,
+      "shape": "constant",
+      "magnitude": 4.068145889275665,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1080.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1081",
+      "family": "main",
+      "split": "train",
+      "seed": 1081,
+      "shape": "ramp",
+      "magnitude": 4.024374140534938,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1081.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1082",
+      "family": "main",
+      "split": "train",
+      "seed": 1082,
+      "shape": "constant",
+      "magnitude": 4.13633567371877,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1082.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1083",
+      "family": "main",
+      "split": "train",
+      "seed": 1083,
+      "shape": "ramp",
+      "magnitude": 4.142865082593192,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1083.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1084",
+      "family": "main",
+      "split": "train",
+      "seed": 1084,
+      "shape": "constant",
+      "magnitude": 4.26051644665846,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1084.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1085",
+      "family": "main",
+      "split": "train",
+      "seed": 1085,
+      "shape": "ramp",
+      "magnitude": 4.263460850161093,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1085.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1086",
+      "family": "main",
+      "split": "train",
+      "seed": 1086,
+      "shape": "constant",
+      "magnitude": 4.3450248534675655,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1086.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1087",
+      "family": "main",
+      "split": "train",
+      "seed": 1087,
+      "shape": "ramp",
+      "magnitude": 4.3747813943753595,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1087.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1088",
+      "family": "main",
+      "split": "train",
+      "seed": 1088,
+      "shape": "constant",
+      "magnitude": 4.413029954552023,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1088.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1089",
+      "family": "main",
+      "split": "train",
+      "seed": 1089,
+      "shape": "ramp",
+      "magnitude": 4.48551065026683,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1089.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1090",
+      "family": "main",
+      "split": "train",
+      "seed": 1090,
+      "shape": "constant",
+      "magnitude": 4.563290183967294,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1090.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1091",
+      "family": "main",
+      "split": "train",
+      "seed": 1091,
+      "shape": "ramp",
+      "magnitude": 4.564040732935212,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1091.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1092",
+      "family": "main",
+      "split": "train",
+      "seed": 1092,
+      "shape": "constant",
+      "magnitude": 4.690220690552019,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1092.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1093",
+      "family": "main",
+      "split": "train",
+      "seed": 1093,
+      "shape": "ramp",
+      "magnitude": 4.689193408933764,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1093.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1094",
+      "family": "main",
+      "split": "train",
+      "seed": 1094,
+      "shape": "constant",
+      "magnitude": 4.797002264406292,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1094.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1095",
+      "family": "main",
+      "split": "train",
+      "seed": 1095,
+      "shape": "ramp",
+      "magnitude": 4.711988970795401,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1095.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1096",
+      "family": "main",
+      "split": "train",
+      "seed": 1096,
+      "shape": "constant",
+      "magnitude": 4.801996676624036,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1096.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1097",
+      "family": "main",
+      "split": "train",
+      "seed": 1097,
+      "shape": "ramp",
+      "magnitude": 4.841312328409606,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1097.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1098",
+      "family": "main",
+      "split": "train",
+      "seed": 1098,
+      "shape": "constant",
+      "magnitude": 4.926897487515268,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1098.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/train/1099",
+      "family": "main",
+      "split": "train",
+      "seed": 1099,
+      "shape": "ramp",
+      "magnitude": 4.989542979385411,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/train/traj_1099.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/val/1100",
+      "family": "main",
+      "split": "val",
+      "seed": 1100,
+      "shape": "constant",
+      "magnitude": 0.2975354870443206,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/val/traj_1100.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/val/1101",
+      "family": "main",
+      "split": "val",
+      "seed": 1101,
+      "shape": "ramp",
+      "magnitude": 0.44084069349940475,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/val/traj_1101.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/val/1102",
+      "family": "main",
+      "split": "val",
+      "seed": 1102,
+      "shape": "constant",
+      "magnitude": 0.5521941976706098,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/val/traj_1102.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/val/1103",
+      "family": "main",
+      "split": "val",
+      "seed": 1103,
+      "shape": "ramp",
+      "magnitude": 0.7256414654680021,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/val/traj_1103.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/val/1104",
+      "family": "main",
+      "split": "val",
+      "seed": 1104,
+      "shape": "constant",
+      "magnitude": 1.2784988294536082,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/val/traj_1104.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/val/1105",
+      "family": "main",
+      "split": "val",
+      "seed": 1105,
+      "shape": "ramp",
+      "magnitude": 1.3147084436616876,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/val/traj_1105.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/val/1106",
+      "family": "main",
+      "split": "val",
+      "seed": 1106,
+      "shape": "constant",
+      "magnitude": 1.8582322958528326,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/val/traj_1106.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/val/1107",
+      "family": "main",
+      "split": "val",
+      "seed": 1107,
+      "shape": "ramp",
+      "magnitude": 1.8161945839655855,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/val/traj_1107.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/val/1108",
+      "family": "main",
+      "split": "val",
+      "seed": 1108,
+      "shape": "constant",
+      "magnitude": 2.331352596666684,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/val/traj_1108.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/val/1109",
+      "family": "main",
+      "split": "val",
+      "seed": 1109,
+      "shape": "ramp",
+      "magnitude": 2.214600969536963,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/val/traj_1109.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/val/1110",
+      "family": "main",
+      "split": "val",
+      "seed": 1110,
+      "shape": "constant",
+      "magnitude": 2.7118403664686026,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/val/traj_1110.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/val/1111",
+      "family": "main",
+      "split": "val",
+      "seed": 1111,
+      "shape": "ramp",
+      "magnitude": 2.81291139738315,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/val/traj_1111.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/val/1112",
+      "family": "main",
+      "split": "val",
+      "seed": 1112,
+      "shape": "constant",
+      "magnitude": 3.1862594796592685,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/val/traj_1112.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/val/1113",
+      "family": "main",
+      "split": "val",
+      "seed": 1113,
+      "shape": "ramp",
+      "magnitude": 3.4759071780489688,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/val/traj_1113.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/val/1114",
+      "family": "main",
+      "split": "val",
+      "seed": 1114,
+      "shape": "constant",
+      "magnitude": 3.7949342629689573,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/val/traj_1114.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/val/1115",
+      "family": "main",
+      "split": "val",
+      "seed": 1115,
+      "shape": "ramp",
+      "magnitude": 3.877131334539773,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/val/traj_1115.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/val/1116",
+      "family": "main",
+      "split": "val",
+      "seed": 1116,
+      "shape": "constant",
+      "magnitude": 4.35755869271992,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/val/traj_1116.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/val/1117",
+      "family": "main",
+      "split": "val",
+      "seed": 1117,
+      "shape": "ramp",
+      "magnitude": 4.456605545501198,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/val/traj_1117.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/val/1118",
+      "family": "main",
+      "split": "val",
+      "seed": 1118,
+      "shape": "constant",
+      "magnitude": 4.724073249265095,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/val/traj_1118.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/val/1119",
+      "family": "main",
+      "split": "val",
+      "seed": 1119,
+      "shape": "ramp",
+      "magnitude": 4.6021548440265345,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/val/traj_1119.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier1/1200",
+      "family": "main",
+      "split": "test_tier1",
+      "seed": 1200,
+      "shape": "step",
+      "magnitude": 0.3232299466869446,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/test_tier1/traj_1200.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier1/1201",
+      "family": "main",
+      "split": "test_tier1",
+      "seed": 1201,
+      "shape": "pulse",
+      "magnitude": 0.4417630512829339,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/test_tier1/traj_1201.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier1/1202",
+      "family": "main",
+      "split": "test_tier1",
+      "seed": 1202,
+      "shape": "step",
+      "magnitude": 0.8183419496782622,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/test_tier1/traj_1202.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier1/1203",
+      "family": "main",
+      "split": "test_tier1",
+      "seed": 1203,
+      "shape": "pulse",
+      "magnitude": 0.5327702116357359,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/test_tier1/traj_1203.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier1/1204",
+      "family": "main",
+      "split": "test_tier1",
+      "seed": 1204,
+      "shape": "step",
+      "magnitude": 1.2061439009837809,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/test_tier1/traj_1204.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier1/1205",
+      "family": "main",
+      "split": "test_tier1",
+      "seed": 1205,
+      "shape": "pulse",
+      "magnitude": 1.4269543152452617,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/test_tier1/traj_1205.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier1/1206",
+      "family": "main",
+      "split": "test_tier1",
+      "seed": 1206,
+      "shape": "step",
+      "magnitude": 1.7912184541963585,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/test_tier1/traj_1206.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier1/1207",
+      "family": "main",
+      "split": "test_tier1",
+      "seed": 1207,
+      "shape": "pulse",
+      "magnitude": 1.991240727050532,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/test_tier1/traj_1207.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier1/1208",
+      "family": "main",
+      "split": "test_tier1",
+      "seed": 1208,
+      "shape": "step",
+      "magnitude": 2.0638521049938205,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/test_tier1/traj_1208.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier1/1209",
+      "family": "main",
+      "split": "test_tier1",
+      "seed": 1209,
+      "shape": "pulse",
+      "magnitude": 2.0370665318717043,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/test_tier1/traj_1209.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier1/1210",
+      "family": "main",
+      "split": "test_tier1",
+      "seed": 1210,
+      "shape": "step",
+      "magnitude": 2.657371141235739,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/test_tier1/traj_1210.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier1/1211",
+      "family": "main",
+      "split": "test_tier1",
+      "seed": 1211,
+      "shape": "pulse",
+      "magnitude": 2.6633586295292067,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/test_tier1/traj_1211.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier1/1212",
+      "family": "main",
+      "split": "test_tier1",
+      "seed": 1212,
+      "shape": "step",
+      "magnitude": 3.455492288485983,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/test_tier1/traj_1212.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier1/1213",
+      "family": "main",
+      "split": "test_tier1",
+      "seed": 1213,
+      "shape": "pulse",
+      "magnitude": 3.1812294693489216,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/test_tier1/traj_1213.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier1/1214",
+      "family": "main",
+      "split": "test_tier1",
+      "seed": 1214,
+      "shape": "step",
+      "magnitude": 3.8131835127782407,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/test_tier1/traj_1214.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier1/1215",
+      "family": "main",
+      "split": "test_tier1",
+      "seed": 1215,
+      "shape": "pulse",
+      "magnitude": 3.680467293900476,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/test_tier1/traj_1215.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier1/1216",
+      "family": "main",
+      "split": "test_tier1",
+      "seed": 1216,
+      "shape": "step",
+      "magnitude": 4.239464714427599,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/test_tier1/traj_1216.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier1/1217",
+      "family": "main",
+      "split": "test_tier1",
+      "seed": 1217,
+      "shape": "pulse",
+      "magnitude": 4.2452208594935925,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/test_tier1/traj_1217.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier1/1218",
+      "family": "main",
+      "split": "test_tier1",
+      "seed": 1218,
+      "shape": "step",
+      "magnitude": 4.634428806731221,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/test_tier1/traj_1218.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier1/1219",
+      "family": "main",
+      "split": "test_tier1",
+      "seed": 1219,
+      "shape": "pulse",
+      "magnitude": 4.909286462648159,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "main/test_tier1/traj_1219.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier2/1300",
+      "family": "main",
+      "split": "test_tier2",
+      "seed": 1300,
+      "shape": "constant",
+      "magnitude": 8.03382875322804,
+      "forcing_range": [
+        8.0,
+        10.0
+      ],
+      "file": "main/test_tier2/traj_1300.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier2/1301",
+      "family": "main",
+      "split": "test_tier2",
+      "seed": 1301,
+      "shape": "constant",
+      "magnitude": 8.13079296682022,
+      "forcing_range": [
+        8.0,
+        10.0
+      ],
+      "file": "main/test_tier2/traj_1301.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier2/1302",
+      "family": "main",
+      "split": "test_tier2",
+      "seed": 1302,
+      "shape": "constant",
+      "magnitude": 8.267368261116522,
+      "forcing_range": [
+        8.0,
+        10.0
+      ],
+      "file": "main/test_tier2/traj_1302.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier2/1303",
+      "family": "main",
+      "split": "test_tier2",
+      "seed": 1303,
+      "shape": "constant",
+      "magnitude": 8.328262605625328,
+      "forcing_range": [
+        8.0,
+        10.0
+      ],
+      "file": "main/test_tier2/traj_1303.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier2/1304",
+      "family": "main",
+      "split": "test_tier2",
+      "seed": 1304,
+      "shape": "constant",
+      "magnitude": 8.414342543130063,
+      "forcing_range": [
+        8.0,
+        10.0
+      ],
+      "file": "main/test_tier2/traj_1304.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier2/1305",
+      "family": "main",
+      "split": "test_tier2",
+      "seed": 1305,
+      "shape": "constant",
+      "magnitude": 8.52781664541495,
+      "forcing_range": [
+        8.0,
+        10.0
+      ],
+      "file": "main/test_tier2/traj_1305.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier2/1306",
+      "family": "main",
+      "split": "test_tier2",
+      "seed": 1306,
+      "shape": "constant",
+      "magnitude": 8.616517112368177,
+      "forcing_range": [
+        8.0,
+        10.0
+      ],
+      "file": "main/test_tier2/traj_1306.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier2/1307",
+      "family": "main",
+      "split": "test_tier2",
+      "seed": 1307,
+      "shape": "constant",
+      "magnitude": 8.78616134684232,
+      "forcing_range": [
+        8.0,
+        10.0
+      ],
+      "file": "main/test_tier2/traj_1307.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier2/1308",
+      "family": "main",
+      "split": "test_tier2",
+      "seed": 1308,
+      "shape": "constant",
+      "magnitude": 8.85455564040547,
+      "forcing_range": [
+        8.0,
+        10.0
+      ],
+      "file": "main/test_tier2/traj_1308.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier2/1309",
+      "family": "main",
+      "split": "test_tier2",
+      "seed": 1309,
+      "shape": "constant",
+      "magnitude": 8.926949223355235,
+      "forcing_range": [
+        8.0,
+        10.0
+      ],
+      "file": "main/test_tier2/traj_1309.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier2/1310",
+      "family": "main",
+      "split": "test_tier2",
+      "seed": 1310,
+      "shape": "constant",
+      "magnitude": 9.035978535795108,
+      "forcing_range": [
+        8.0,
+        10.0
+      ],
+      "file": "main/test_tier2/traj_1310.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier2/1311",
+      "family": "main",
+      "split": "test_tier2",
+      "seed": 1311,
+      "shape": "constant",
+      "magnitude": 9.12622470160331,
+      "forcing_range": [
+        8.0,
+        10.0
+      ],
+      "file": "main/test_tier2/traj_1311.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier2/1312",
+      "family": "main",
+      "split": "test_tier2",
+      "seed": 1312,
+      "shape": "constant",
+      "magnitude": 9.266458520351954,
+      "forcing_range": [
+        8.0,
+        10.0
+      ],
+      "file": "main/test_tier2/traj_1312.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier2/1313",
+      "family": "main",
+      "split": "test_tier2",
+      "seed": 1313,
+      "shape": "constant",
+      "magnitude": 9.323984306999632,
+      "forcing_range": [
+        8.0,
+        10.0
+      ],
+      "file": "main/test_tier2/traj_1313.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier2/1314",
+      "family": "main",
+      "split": "test_tier2",
+      "seed": 1314,
+      "shape": "constant",
+      "magnitude": 9.439627777455499,
+      "forcing_range": [
+        8.0,
+        10.0
+      ],
+      "file": "main/test_tier2/traj_1314.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier2/1315",
+      "family": "main",
+      "split": "test_tier2",
+      "seed": 1315,
+      "shape": "constant",
+      "magnitude": 9.539310820001525,
+      "forcing_range": [
+        8.0,
+        10.0
+      ],
+      "file": "main/test_tier2/traj_1315.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier2/1316",
+      "family": "main",
+      "split": "test_tier2",
+      "seed": 1316,
+      "shape": "constant",
+      "magnitude": 9.662772864174004,
+      "forcing_range": [
+        8.0,
+        10.0
+      ],
+      "file": "main/test_tier2/traj_1316.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier2/1317",
+      "family": "main",
+      "split": "test_tier2",
+      "seed": 1317,
+      "shape": "constant",
+      "magnitude": 9.78815502695417,
+      "forcing_range": [
+        8.0,
+        10.0
+      ],
+      "file": "main/test_tier2/traj_1317.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier2/1318",
+      "family": "main",
+      "split": "test_tier2",
+      "seed": 1318,
+      "shape": "constant",
+      "magnitude": 9.802244660519428,
+      "forcing_range": [
+        8.0,
+        10.0
+      ],
+      "file": "main/test_tier2/traj_1318.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "main/test_tier2/1319",
+      "family": "main",
+      "split": "test_tier2",
+      "seed": 1319,
+      "shape": "constant",
+      "magnitude": 9.900853771480474,
+      "forcing_range": [
+        8.0,
+        10.0
+      ],
+      "file": "main/test_tier2/traj_1319.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3000",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3000,
+      "shape": "constant",
+      "magnitude": 0.17195993846082655,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3000.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3001",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3001,
+      "shape": "ramp",
+      "magnitude": 0.1756944054805184,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3001.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3002",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3002,
+      "shape": "constant",
+      "magnitude": 0.48324876265080463,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3002.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3003",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3003,
+      "shape": "ramp",
+      "magnitude": 0.2631410856302352,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3003.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3004",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3004,
+      "shape": "constant",
+      "magnitude": 0.6585938359771741,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3004.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3005",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3005,
+      "shape": "ramp",
+      "magnitude": 0.6813830674304819,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3005.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3006",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3006,
+      "shape": "constant",
+      "magnitude": 0.9757809392077534,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3006.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3007",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3007,
+      "shape": "ramp",
+      "magnitude": 0.8821657047575051,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3007.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3008",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3008,
+      "shape": "constant",
+      "magnitude": 1.1337406367263674,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3008.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3009",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3009,
+      "shape": "ramp",
+      "magnitude": 1.1687581095487218,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3009.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3010",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3010,
+      "shape": "constant",
+      "magnitude": 1.4467433521101527,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3010.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3011",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3011,
+      "shape": "ramp",
+      "magnitude": 1.3555600475889467,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3011.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3012",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3012,
+      "shape": "constant",
+      "magnitude": 1.650585714511962,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3012.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3013",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3013,
+      "shape": "ramp",
+      "magnitude": 1.6912259038886654,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3013.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3014",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3014,
+      "shape": "constant",
+      "magnitude": 1.978922706275913,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3014.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3015",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3015,
+      "shape": "ramp",
+      "magnitude": 1.9775156501024043,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3015.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3016",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3016,
+      "shape": "constant",
+      "magnitude": 2.0198794659742125,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3016.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3017",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3017,
+      "shape": "ramp",
+      "magnitude": 2.053342938667883,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3017.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3018",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3018,
+      "shape": "constant",
+      "magnitude": 2.4338211160686956,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3018.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3019",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3019,
+      "shape": "ramp",
+      "magnitude": 2.295689824836809,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3019.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3020",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3020,
+      "shape": "constant",
+      "magnitude": 2.5846595424111865,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3020.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3021",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3021,
+      "shape": "ramp",
+      "magnitude": 2.705930852359766,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3021.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3022",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3022,
+      "shape": "constant",
+      "magnitude": 2.7968665233056242,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3022.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3023",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3023,
+      "shape": "ramp",
+      "magnitude": 2.76681508945806,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3023.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3024",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3024,
+      "shape": "constant",
+      "magnitude": 3.151699124931185,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3024.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3025",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3025,
+      "shape": "ramp",
+      "magnitude": 3.1301700265453487,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3025.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3026",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3026,
+      "shape": "constant",
+      "magnitude": 3.3241887159307417,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3026.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3027",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3027,
+      "shape": "ramp",
+      "magnitude": 3.3381232587798735,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3027.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3028",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3028,
+      "shape": "constant",
+      "magnitude": 3.5943721152058226,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3028.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3029",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3029,
+      "shape": "ramp",
+      "magnitude": 3.597858338961742,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3029.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3030",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3030,
+      "shape": "constant",
+      "magnitude": 3.896720112349626,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3030.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3031",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3031,
+      "shape": "ramp",
+      "magnitude": 3.880206630089339,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3031.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3032",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3032,
+      "shape": "constant",
+      "magnitude": 4.141441007765665,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3032.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3033",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3033,
+      "shape": "ramp",
+      "magnitude": 4.159665143470122,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3033.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3034",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3034,
+      "shape": "constant",
+      "magnitude": 4.390941565590749,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3034.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3035",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3035,
+      "shape": "ramp",
+      "magnitude": 4.382679035236555,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3035.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3036",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3036,
+      "shape": "constant",
+      "magnitude": 4.665151868138637,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3036.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3037",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3037,
+      "shape": "ramp",
+      "magnitude": 4.595825260741391,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3037.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3038",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3038,
+      "shape": "constant",
+      "magnitude": 4.9047722092560475,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3038.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/train/3039",
+      "family": "calibration",
+      "split": "train",
+      "seed": 3039,
+      "shape": "ramp",
+      "magnitude": 4.936177947806238,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/train/traj_3039.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/val/3100",
+      "family": "calibration",
+      "split": "val",
+      "seed": 3100,
+      "shape": "constant",
+      "magnitude": 0.3017728786021051,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/val/traj_3100.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/val/3101",
+      "family": "calibration",
+      "split": "val",
+      "seed": 3101,
+      "shape": "ramp",
+      "magnitude": 0.14751652353987732,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/val/traj_3101.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/val/3102",
+      "family": "calibration",
+      "split": "val",
+      "seed": 3102,
+      "shape": "constant",
+      "magnitude": 1.336357783878711,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/val/traj_3102.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/val/3103",
+      "family": "calibration",
+      "split": "val",
+      "seed": 3103,
+      "shape": "ramp",
+      "magnitude": 1.3441330287463145,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/val/traj_3103.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/val/3104",
+      "family": "calibration",
+      "split": "val",
+      "seed": 3104,
+      "shape": "constant",
+      "magnitude": 2.0064133781609423,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/val/traj_3104.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/val/3105",
+      "family": "calibration",
+      "split": "val",
+      "seed": 3105,
+      "shape": "ramp",
+      "magnitude": 2.8371698641220373,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/val/traj_3105.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/val/3106",
+      "family": "calibration",
+      "split": "val",
+      "seed": 3106,
+      "shape": "constant",
+      "magnitude": 3.8995560585760822,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/val/traj_3106.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/val/3107",
+      "family": "calibration",
+      "split": "val",
+      "seed": 3107,
+      "shape": "ramp",
+      "magnitude": 3.0048083768290343,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/val/traj_3107.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/val/3108",
+      "family": "calibration",
+      "split": "val",
+      "seed": 3108,
+      "shape": "constant",
+      "magnitude": 4.167396727317931,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/val/traj_3108.npz",
+      "n_time": 2006
+    },
+    {
+      "id": "calibration/val/3109",
+      "family": "calibration",
+      "split": "val",
+      "seed": 3109,
+      "shape": "ramp",
+      "magnitude": 4.317300500786274,
+      "forcing_range": [
+        0.0,
+        5.0
+      ],
+      "file": "calibration/val/traj_3109.npz",
+      "n_time": 2006
+    }
+  ]
+}

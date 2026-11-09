@@ -4,8 +4,8 @@
 
 ```bash
 pip install -e ".[dev]"
-python scripts/generate_data.py --config configs/default.yaml
-python scripts/train.py --config configs/default.yaml
+python -m scripts.generate_data --config configs/pi_jepa/default.yaml
+python -m scripts.train --config configs/pi_jepa/default.yaml
 ```
 
 `train.py --auto-generate` will synthesise the dataset on the fly if it is
@@ -15,11 +15,11 @@ missing, which is convenient for a one-shot container run.
 
 | File | Purpose |
 | --- | --- |
-| `configs/default.yaml` | Full physics-informed model (model C) |
-| `configs/baseline_no_physics.yaml` | JEPA-only ablation (model B) |
+| `configs/pi_jepa/default.yaml` | Full physics-informed model (model C) |
+| `benchmarks/pi_jepa/no_physics.yaml` | JEPA-only ablation (model B) |
 
 Override any field by editing a YAML file; keys map 1:1 to the dataclasses in
-`marsworld.config`.
+`config`.
 
 ## Experiments from the research plan
 

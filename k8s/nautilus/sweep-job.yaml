@@ -1,0 +1,90 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: marsworld-pilot-sweep
+  namespace: razvanlab
+  labels:
+    app: marsworld-pilot
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 86400
+  template:
+    metadata:
+      labels:
+        app: marsworld-pilot
+    spec:
+      restartPolicy: Never
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: feature.node.kubernetes.io/pci-10de.present
+                    operator: NotIn
+                    values: ["true"]
+      containers:
+        - name: sweep
+          image: python:3.11-slim-bookworm
+          command: [/bin/sh, -ec]
+          args:
+            - |
+              python - <<'PY'
+              import os
+              from pathlib import Path
+              import re
+              import shutil
+              import tarfile
+              import urllib.request
+
+              revision = os.environ["MARSWORLD_REVISION"]
+              if not re.fullmatch(r"[0-9a-f]{40}", revision):
+                  raise ValueError("MARSWORLD_REVISION must be a full Git commit")
+              archive = Path("/runtime/source.tar.gz")
+              url = f"https://codeload.github.com/sameeerkashyap/mars-jepa/tar.gz/{revision}"
+              urllib.request.urlretrieve(url, archive)
+              with tarfile.open(archive) as source:
+                  source.extractall("/runtime/source", filter="data")
+              shutil.move(str(next(Path("/runtime/source").iterdir())), "/runtime/repo")
+              PY
+              cd /runtime/repo
+              python -m pip install --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+              python -m pip install --no-cache-dir -r k8s/nautilus/requirements.txt -e '.[benchmark]'
+              /bin/sh scripts/pilot/run_sweep.sh
+          env:
+            - name: MARSWORLD_REVISION
+              value: ddbb553a317afbc3f13cc25f6986d7240130a28d
+            - name: MARSWORLD_RUN_DIR
+              value: /results/pilot-20261109
+            - name: MARSWORLD_WORKERS
+              value: "8"
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: OMP_NUM_THREADS
+              value: "1"
+            - name: MKL_NUM_THREADS
+              value: "1"
+            - name: OPENBLAS_NUM_THREADS
+              value: "1"
+            - name: MPLCONFIGDIR
+              value: /runtime/matplotlib
+          resources:
+            requests:
+              cpu: "8"
+              memory: 24Gi
+              ephemeral-storage: 8Gi
+            limits:
+              cpu: "8"
+              memory: 24Gi
+              ephemeral-storage: 8Gi
+          volumeMounts:
+            - name: results
+              mountPath: /results
+            - name: runtime
+              mountPath: /runtime
+      volumes:
+        - name: results
+          persistentVolumeClaim:
+            claimName: marsworld-pilot-sweep
+        - name: runtime
+          emptyDir:
+            sizeLimit: 8Gi

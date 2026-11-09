@@ -5,4 +5,4 @@ seeding for reproducibility.
 
 ## API
 
-::: marsworld.utils.logging
+::: scripts.utils

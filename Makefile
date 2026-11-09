@@ -7,13 +7,13 @@ install-docs:
 	pip install -e ".[docs]"
 
 data:
-	python scripts/generate_data.py --config configs/default.yaml
+	python -m scripts.generate_data --config configs/pi_jepa/default.yaml
 
 train:
-	python scripts/train.py --config configs/default.yaml --auto-generate
+	python -m scripts.train --config configs/pi_jepa/default.yaml --auto-generate
 
 baseline:
-	python scripts/train.py --config configs/baseline_no_physics.yaml --auto-generate
+	python -m scripts.train --config benchmarks/pi_jepa/no_physics.yaml --auto-generate
 
 test:
 	pytest -q

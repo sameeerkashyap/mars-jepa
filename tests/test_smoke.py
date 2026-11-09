@@ -11,13 +11,12 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from marsworld.config import Config, DataConfig, ModelConfig, PhysicsConfig, TrainConfig
-from marsworld.data.solver import generate_dataset
-from marsworld.data.dataset import TrajectoryDataset
-from marsworld.models.jepa import PIJEPA
-from marsworld.training.losses import CompositeLoss
-from marsworld.physics.losses import pde_residual_loss, mass_conservation_loss
-
+from config import Config, DataConfig, ModelConfig, PhysicsConfig, TrainConfig
+from data.dataset import TrajectoryDataset
+from data.solver import generate_dataset
+from models.pi_jepa.jepa import PIJEPA
+from physics.losses import mass_conservation_loss, pde_residual_loss
+from training.losses import CompositeLoss
 
 GRID = 16
 
@@ -37,7 +36,7 @@ def test_solver_shapes_and_finiteness():
 
 
 def test_solver_stability_guard():
-    from marsworld.data.solver import HeatDiffusionSolver
+    from data.solver import HeatDiffusionSolver
 
     with pytest.raises(ValueError):
         HeatDiffusionSolver(grid_size=GRID, dt=10.0, diffusivity=5.0)
@@ -84,7 +83,7 @@ def test_ema_target_update_changes_target_encoder():
 
 
 def test_decoder_rejects_non_multiple_of_8():
-    from marsworld.models.decoder import ConvDecoder
+    from models.pi_jepa.decoder import ConvDecoder
 
     with pytest.raises(ValueError):
         ConvDecoder(1, 16, 32, out_size=20)  # silent-shape-bug regression guard
@@ -94,7 +93,7 @@ def test_decoder_rejects_non_multiple_of_8():
 
 @pytest.mark.parametrize("hidden", [6, 8, 12, 16, 32])
 def test_groupnorm_handles_any_channel_width(hidden):
-    from marsworld.models.encoder import ConvEncoder
+    from models.pi_jepa.encoder import ConvEncoder
 
     enc = ConvEncoder(1, hidden, 32)
     out = enc(torch.randn(1, 1, 32, 32))  # must not raise regardless of width

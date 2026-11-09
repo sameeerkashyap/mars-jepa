@@ -1,0 +1,406 @@
+{
+  "definition": "\ndiag_tier2.py -- RESPONSE-based Tier-2 diagnostic (supersedes the level-based\ndiagnostics_tier2.py, which measured min T_s above frost, not the response).\n\nFor each storm seed s in DIAG_SEEDS (7000-7004; outside every dataset family\nrange, so no dataset or test-split file is read) and each constant forcing A in\nMAGS = {7.5, 8, 9, 10} W/m^2:\n\n    spin   : run_truth(F_a=0, seed=s, SPIN_YEARS)            -> initial state\n    control: run_truth(F_a=0, seed=s, REC_YEARS, init)       (shared across A)\n    forced : run_truth(F_a=A, seed=s, REC_YEARS, init)       constant forcing\n    response R(t, x) = T_s(forced) - T_s(control)            same seed + init\n\nPer hemisphere (polar band |lat| > 60 deg; N = lat > 60, S = lat < -60):\n  * polar-winter times = steps where the band-mean insolation S is\n    <= WINTER_S_FRAC * (its max over the record)   [observable-only definition]\n  * per seed: winter-mean band response r_s (K), and the fraction of winter\n    band cells that are frost-pinned in the control but unpinned when forced\n    (T_s > T_frost + PIN_TOL_K)\n  * table: signal = mean_s r_s ; noise = std_s r_s ; S/N = signal / noise ;\n    peak = mean_s max_t(band-mean R over winter) ; unpinned fraction (mean_s).\n\nFrozen design: scale 0.10, D=0.10, n=64, dt=0.05; record_years=3 (= dataset).\n\nRun it yourself (slow: 5 seeds x (1 spin + 1 control + 4 forced) runs of\n3 years each):\n\n    python3 diag_tier2.py --workers 5          # writes diag_tier2.json\n",
+  "mags": [
+    7.5,
+    8.0,
+    9.0,
+    10.0
+  ],
+  "seeds": [
+    7000,
+    7001,
+    7002,
+    7003,
+    7004
+  ],
+  "rec_years": 3,
+  "band_deg": 60.0,
+  "winter_s_frac": 0.1,
+  "pin_tol_K": 0.5,
+  "table": {
+    "7.5": {
+      "N": {
+        "signal_K": 6.442169752570665,
+        "seed_std_K": 0.011901439599620547,
+        "SN": 541.2933199086319,
+        "peak_K": 8.416407500912289,
+        "frac_unpinned": 1.0,
+        "n_seeds": 5
+      },
+      "S": {
+        "signal_K": 6.053798259484135,
+        "seed_std_K": 0.04422212063870287,
+        "SN": 136.8952499800721,
+        "peak_K": 11.84937613010585,
+        "frac_unpinned": 0.9970260223048328,
+        "n_seeds": 5
+      }
+    },
+    "8.0": {
+      "N": {
+        "signal_K": 6.853481178121454,
+        "seed_std_K": 0.012664659886346729,
+        "SN": 541.1500379500852,
+        "peak_K": 8.842143673409627,
+        "frac_unpinned": 1.0,
+        "n_seeds": 5
+      },
+      "S": {
+        "signal_K": 6.504758848620732,
+        "seed_std_K": 0.043368555449541775,
+        "SN": 149.98790670325312,
+        "peak_K": 12.241797428958204,
+        "frac_unpinned": 1.0,
+        "n_seeds": 5
+      }
+    },
+    "9.0": {
+      "N": {
+        "signal_K": 7.669576465011443,
+        "seed_std_K": 0.014158422091094428,
+        "SN": 541.697119613037,
+        "peak_K": 9.686331503647025,
+        "frac_unpinned": 1.0,
+        "n_seeds": 5
+      },
+      "S": {
+        "signal_K": 7.398440535381863,
+        "seed_std_K": 0.04174547969746037,
+        "SN": 177.2273450682603,
+        "peak_K": 13.020081670485292,
+        "frac_unpinned": 1.0,
+        "n_seeds": 5
+      }
+    },
+    "10.0": {
+      "N": {
+        "signal_K": 8.477120405137017,
+        "seed_std_K": 0.015609718219832881,
+        "SN": 543.0668437285714,
+        "peak_K": 10.52099285096499,
+        "frac_unpinned": 1.0,
+        "n_seeds": 5
+      },
+      "S": {
+        "signal_K": 8.281359549651233,
+        "seed_std_K": 0.040233600338082244,
+        "SN": 205.83192853891057,
+        "peak_K": 13.78979507532269,
+        "frac_unpinned": 1.0,
+        "n_seeds": 5
+      }
+    }
+  },
+  "per_seed": [
+    {
+      "seed": 7000,
+      "T_frost": 147.73994380796418,
+      "n_band_cells": {
+        "N": 4,
+        "S": 4
+      },
+      "n_winter_steps": {
+        "N": 588,
+        "S": 907
+      },
+      "by_A": {
+        "7.5": {
+          "N": {
+            "winter_mean_response_K": 6.457118250039152,
+            "winter_peak_response_K": 8.262194694470082,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          },
+          "S": {
+            "winter_mean_response_K": 6.0498514610005545,
+            "winter_peak_response_K": 11.841674589617824,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          }
+        },
+        "8.0": {
+          "N": {
+            "winter_mean_response_K": 6.869325166071531,
+            "winter_peak_response_K": 8.691690418886814,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          },
+          "S": {
+            "winter_mean_response_K": 6.5000245110394985,
+            "winter_peak_response_K": 12.234176174398492,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          }
+        },
+        "9.0": {
+          "N": {
+            "winter_mean_response_K": 7.687175512087541,
+            "winter_peak_response_K": 9.543243941830916,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          },
+          "S": {
+            "winter_mean_response_K": 7.3921665519074775,
+            "winter_peak_response_K": 13.012621622557354,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          }
+        },
+        "10.0": {
+          "N": {
+            "winter_mean_response_K": 8.496427972859736,
+            "winter_peak_response_K": 10.38507250835746,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          },
+          "S": {
+            "winter_mean_response_K": 8.273591593302964,
+            "winter_peak_response_K": 13.782496863168419,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          }
+        }
+      }
+    },
+    {
+      "seed": 7001,
+      "T_frost": 147.73994380796418,
+      "n_band_cells": {
+        "N": 4,
+        "S": 4
+      },
+      "n_winter_steps": {
+        "N": 588,
+        "S": 907
+      },
+      "by_A": {
+        "7.5": {
+          "N": {
+            "winter_mean_response_K": 6.440545641176082,
+            "winter_peak_response_K": 8.673330261105683,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          },
+          "S": {
+            "winter_mean_response_K": 5.979982398228255,
+            "winter_peak_response_K": 11.821474600707646,
+            "frac_ctrl_pinned_unpinned_forced": 0.9851301115241635
+          }
+        },
+        "8.0": {
+          "N": {
+            "winter_mean_response_K": 6.85176402852033,
+            "winter_peak_response_K": 9.093421608140446,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          },
+          "S": {
+            "winter_mean_response_K": 6.432834316429741,
+            "winter_peak_response_K": 12.214871327130858,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          }
+        },
+        "9.0": {
+          "N": {
+            "winter_mean_response_K": 7.667675357145293,
+            "winter_peak_response_K": 9.926511382908174,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          },
+          "S": {
+            "winter_mean_response_K": 7.330203374689087,
+            "winter_peak_response_K": 12.995047087374438,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          }
+        },
+        "10.0": {
+          "N": {
+            "winter_mean_response_K": 8.475038156523107,
+            "winter_peak_response_K": 10.7503234810234,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          },
+          "S": {
+            "winter_mean_response_K": 8.216687292504748,
+            "winter_peak_response_K": 13.766576218434558,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          }
+        }
+      }
+    },
+    {
+      "seed": 7002,
+      "T_frost": 147.73994380796418,
+      "n_band_cells": {
+        "N": 4,
+        "S": 4
+      },
+      "n_winter_steps": {
+        "N": 588,
+        "S": 907
+      },
+      "by_A": {
+        "7.5": {
+          "N": {
+            "winter_mean_response_K": 6.432587570776374,
+            "winter_peak_response_K": 8.127433894503163,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          },
+          "S": {
+            "winter_mean_response_K": 6.094770379446423,
+            "winter_peak_response_K": 11.882904986259035,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          }
+        },
+        "8.0": {
+          "N": {
+            "winter_mean_response_K": 6.843312724342775,
+            "winter_peak_response_K": 8.556244935110122,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          },
+          "S": {
+            "winter_mean_response_K": 6.54591669918553,
+            "winter_peak_response_K": 12.274502890636462,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          }
+        },
+        "9.0": {
+          "N": {
+            "winter_mean_response_K": 7.658262122158706,
+            "winter_peak_response_K": 9.406525808263666,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          },
+          "S": {
+            "winter_mean_response_K": 7.439971104657698,
+            "winter_peak_response_K": 13.051182696426977,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          }
+        },
+        "10.0": {
+          "N": {
+            "winter_mean_response_K": 8.464694563487994,
+            "winter_peak_response_K": 10.247205035801485,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          },
+          "S": {
+            "winter_mean_response_K": 8.323264144647032,
+            "winter_peak_response_K": 13.819346004255458,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          }
+        }
+      }
+    },
+    {
+      "seed": 7003,
+      "T_frost": 147.73994380796418,
+      "n_band_cells": {
+        "N": 4,
+        "S": 4
+      },
+      "n_winter_steps": {
+        "N": 588,
+        "S": 907
+      },
+      "by_A": {
+        "7.5": {
+          "N": {
+            "winter_mean_response_K": 6.429306346545586,
+            "winter_peak_response_K": 8.128798871283358,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          },
+          "S": {
+            "winter_mean_response_K": 6.071066874774656,
+            "winter_peak_response_K": 11.862266013759417,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          }
+        },
+        "8.0": {
+          "N": {
+            "winter_mean_response_K": 6.839746943795129,
+            "winter_peak_response_K": 8.557571895553053,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          },
+          "S": {
+            "winter_mean_response_K": 6.521159491861311,
+            "winter_peak_response_K": 12.2544659997682,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          }
+        },
+        "9.0": {
+          "N": {
+            "winter_mean_response_K": 7.654139277396655,
+            "winter_peak_response_K": 9.407778567665773,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          },
+          "S": {
+            "winter_mean_response_K": 7.413139177190222,
+            "winter_peak_response_K": 13.03231562289946,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          }
+        },
+        "10.0": {
+          "N": {
+            "winter_mean_response_K": 8.460030257149333,
+            "winter_peak_response_K": 10.248385952072695,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          },
+          "S": {
+            "winter_mean_response_K": 8.294400105649583,
+            "winter_peak_response_K": 13.801604796762057,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          }
+        }
+      }
+    },
+    {
+      "seed": 7004,
+      "T_frost": 147.73994380796418,
+      "n_band_cells": {
+        "N": 4,
+        "S": 4
+      },
+      "n_winter_steps": {
+        "N": 588,
+        "S": 907
+      },
+      "by_A": {
+        "7.5": {
+          "N": {
+            "winter_mean_response_K": 6.451290954316127,
+            "winter_peak_response_K": 8.890279783199155,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          },
+          "S": {
+            "winter_mean_response_K": 6.073320183970787,
+            "winter_peak_response_K": 11.83856046018532,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          }
+        },
+        "8.0": {
+          "N": {
+            "winter_mean_response_K": 6.863257027877512,
+            "winter_peak_response_K": 9.311789509357702,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          },
+          "S": {
+            "winter_mean_response_K": 6.5238592245875795,
+            "winter_peak_response_K": 12.230970752857012,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          }
+        },
+        "9.0": {
+          "N": {
+            "winter_mean_response_K": 7.680630056269014,
+            "winter_peak_response_K": 10.147597817566599,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          },
+          "S": {
+            "winter_mean_response_K": 7.416722468464836,
+            "winter_peak_response_K": 13.009241323168226,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          }
+        },
+        "10.0": {
+          "N": {
+            "winter_mean_response_K": 8.489411075664911,
+            "winter_peak_response_K": 10.973977277569915,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          },
+          "S": {
+            "winter_mean_response_K": 8.298854612151846,
+            "winter_peak_response_K": 13.778951493992963,
+            "frac_ctrl_pinned_unpinned_forced": 1.0
+          }
+        }
+      }
+    }
+  ]
+}

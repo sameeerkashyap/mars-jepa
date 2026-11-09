@@ -1,0 +1,90 @@
+# =====================================================================
+# Configuration for the 1-D Mars climate pilot (Checkpoint A).
+#
+# Every parameter that is physically uncertain is flagged with
+#   "# UNCERTAIN"  and a plausible range.  Nothing uncertain is picked
+#   silently -- see README.md for the reasoning behind each default.
+# =====================================================================
+
+grid:
+  n: 64                     # number of cell centres, uniform in x = sin(lat)
+
+time:
+  # Explicit source step + implicit (backward-Euler) diffusion sub-step.
+  dt_sol: 0.05              # timestep in sols (stable; small for accuracy)
+  output_every_sol: 1.0    # how often to store diagnostics (sols)
+
+planet:
+  solar_constant: 589.0    # W/m^2 at Mars mean orbital distance
+                           # UNCERTAIN: 586-592 (depends on TSI & mean distance)
+  obliquity_deg: 25.19     # Mars obliquity (well constrained, present-day)
+  eccentricity: 0.0934     # Mars orbital eccentricity (well constrained)
+  Ls_perihelion_deg: 251.0 # solar longitude of perihelion
+                           # UNCERTAIN: 250-252 (slowly precessing)
+  year_sols: 668.6         # length of Mars year in sols
+  sol_seconds: 88775.0     # length of one sol in seconds
+
+physics:
+  emissivity: 0.95         # surface longwave emissivity
+                           # UNCERTAIN: 0.90-1.00
+  albedo_bare: 0.25        # bare-ground (dusty regolith) albedo
+                           # UNCERTAIN: 0.10-0.40
+  albedo_ice: 0.60         # albedo where CO2 ice is present (m > 0)
+                           # UNCERTAIN: 0.40-0.80
+  D: 0.10                  # meridional diffusion coefficient, W/m^2/K
+                           # (coefficient of D d/dx[(1-x^2) dT/dx])
+                           # UNCERTAIN: 0.10-0.60 (thin atmosphere -> weak transport)
+                           # NOTE: chosen at the low end so that even the
+                           # DUST-FREE base climate (mismatch_scale=0, i.e. the
+                           # Model-2 climate) is cold enough at the winter pole to
+                           # form a seasonal CO2 cap.  This makes the frost/ice
+                           # nonlinearity SHARED physics present at every scale,
+                           # decoupling it from the dust+subsurface mismatch knob.
+                           # See DIAGNOSTICS.md.
+
+truth:
+  # ---- Model 1 (truth) surface + subsurface heat capacities ----
+  C_s: 5.0e+5              # surface effective heat capacity, J/m^2/K
+                           # UNCERTAIN: 2e5-1e6 (seasonal skin depth, thermal inertia)
+  C_g: 5.0e+6              # subsurface reservoir heat capacity, J/m^2/K
+                           # UNCERTAIN: 2e6-5e7 (must satisfy C_g >> C_s)
+  G: 2.0                   # surface<->subsurface conductance, W/m^2/K
+                           # UNCERTAIN: 0.5-5.0
+
+  # ---- Hidden dust optical depth tau(x, t) (never given to models) ----
+  dust_base: 0.30          # seasonal baseline optical depth
+                           # UNCERTAIN: 0.1-0.6
+  dust_seasonal_amp: 0.40  # amplitude of seasonal dust cycle
+                           # UNCERTAIN: 0.2-1.0
+  dust_peak_Ls_deg: 251.0  # Ls of seasonal dust maximum (near perihelion)
+                           # UNCERTAIN: 240-280
+  # ---- random dust-storm pulses (drawn per trajectory from the seed) ----
+  storm_rate_per_year: 3.0 # expected number of storms per Mars year
+                           # UNCERTAIN: 1-6
+  storm_amp_mean: 1.5      # mean peak optical depth of a storm
+                           # UNCERTAIN: 0.5-4.0 (global dust storms up to ~5)
+  storm_amp_std: 0.7       # std of storm peak amplitude   # UNCERTAIN
+  storm_duration_sol: 30.0 # e-folding duration of a storm (sols)
+                           # UNCERTAIN: 10-60
+  storm_lat_center: -0.3   # preferred storm centre in x=sin(lat) (southern)
+                           # UNCERTAIN: -0.6 to 0.0
+  storm_lat_width: 0.6     # latitudinal (in x) width of a storm  # UNCERTAIN
+
+  # mismatch_scale in [0, 1] scales BOTH the dust optical depth (all of it)
+  # and the subsurface coupling G.  At 0 the truth reduces exactly to Model 2
+  # (tau = 0 so exp(-tau)=1, and G = 0 so the subsurface decouples).
+  mismatch_scale: 1.0      # default fidelity gap
+
+co2:
+  surface_pressure_pa: 610.0   # fixed surface pressure for frost point
+                               # UNCERTAIN: 600-700 (pressure feedback EXCLUDED)
+  latent_heat: 5.9e+5          # latent heat of CO2 sublimation, J/kg
+                               # UNCERTAIN: 5.7e5-6.0e5
+  vapor_A: 1.382e+12           # CO2 vapor-pressure prefactor A in p=A exp(-B/T)
+                               # UNCERTAIN: fit constant; gives ~148 K at 610 Pa
+  vapor_B: 3182.48             # CO2 vapor-pressure exponent B (K)
+                               # UNCERTAIN: fit constant (James et al. style fit)
+
+init:
+  T_init: 210.0            # initial surface & subsurface temperature, K
+  spinup_years: 4          # Mars years of spin-up before analysis
