@@ -1,7 +1,7 @@
 # Mars 1-D Climate Pilot — Checkpoint A
 
 > Folder update: commands are in `scripts/pilot/`, model comparisons in
-> `benchmarks/`, physics and readers in `src/marsworld/`, and specifications
+> `benchmarks/`, physics and readers in `src/`, and specifications
 > in `data/specification/pilot/`. See [the current run guide](RUNME.md).
 
 A small, self-contained latitude-only (1-D) climate model of Mars surface

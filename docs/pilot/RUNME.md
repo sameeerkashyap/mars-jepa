@@ -10,9 +10,9 @@ python -m pip install -e ".[dev,benchmark]"
 
 - Settings and split rules: `data/specification/pilot/`.
 - Trajectory root: `data/synthetic/pilot/`.
-- World model: `src/marsworld/models/latent_jepa/`.
+- World model: `src/models/latent_jepa/`.
 - Comparison architectures: `benchmarks/`.
-- Reference physics: `src/marsworld/physics/`.
+- Reference physics: `src/physics/`.
 - Commands and utilities: `scripts/pilot/`.
 - New results and runs: `outputs/pilot/`.
 

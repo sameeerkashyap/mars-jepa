@@ -19,7 +19,7 @@ missing, which is convenient for a one-shot container run.
 | `benchmarks/pi_jepa/no_physics.yaml` | JEPA-only ablation (model B) |
 
 Override any field by editing a YAML file; keys map 1:1 to the dataclasses in
-`marsworld.config`.
+`config`.
 
 ## Experiments from the research plan
 

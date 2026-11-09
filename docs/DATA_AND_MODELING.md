@@ -40,8 +40,8 @@ Added heat can turn frost into gas while temperature stays near the frost point.
 Once the ice is gone, the surface can warm further. Predicting when this happens
 tests how a model handles hidden state and physical processes.
 
-The reference code is `src/marsworld/physics/reference.py`. Shared heat and frost
-calculations live in `src/marsworld/physics/surface.py`.
+The reference code is `src/physics/reference.py`. Shared heat and frost
+calculations live in `src/physics/surface.py`.
 
 ## What trains the models
 
@@ -94,7 +94,7 @@ much data each method needs. Protocol changes need a recorded update.
 
 | Method | What it uses | Location |
 |---|---|---|
-| Latent JEPA | A compact internal state that changes under heating | `src/marsworld/models/latent_jepa/` |
+| Latent JEPA | A compact internal state that changes under heating | `src/models/latent_jepa/` |
 | GRU | Memory learned from observations | `benchmarks/gru/` |
 | RSSM | Recurrent memory and a probability distribution over hidden state | `benchmarks/rssm/` |
 | Transformer | Relationships within the observed sequence | `benchmarks/transformer/` |
@@ -111,8 +111,8 @@ for selected architectures; the registered sweep does not enable them for every 
 
 ## The separate spatial prototype
 
-`src/marsworld/models/pi_jepa/` uses a two-dimensional diffusion generator in
-`src/marsworld/data/solver.py`. It has a two-value transport forcing vector.
+`src/models/pi_jepa/` uses a two-dimensional diffusion generator in
+`src/data/solver.py`. It has a two-value transport forcing vector.
 Its arrays live under `data/synthetic/pi_jepa/`.
 
 The heating pilot uses `data/synthetic/pilot/`. Each track has its own loader,

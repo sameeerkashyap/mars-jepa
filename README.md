@@ -123,17 +123,16 @@ documentation dependencies:
 python -m pip install -e ".[dev,docs,benchmark]"
 ```
 
-The current flat source layout uses `PYTHONPATH=src` for source-tree commands.
-The package discovery and pilot root-path settings still need alignment with
-this layout before full pilot execution.
+The editable install exposes the source packages and scripts. Run the commands
+below from the repository root.
 
 ### Explore the heating pilot
 
 ```bash
-PYTHONPATH=src python -m scripts.pilot.gen_data --help
-PYTHONPATH=src python -m scripts.pilot.train --help
-PYTHONPATH=src python -m scripts.pilot.eval --help
-PYTHONPATH=src python -m scripts.pilot.sweep --help
+python -m scripts.pilot.gen_data --help
+python -m scripts.pilot.train --help
+python -m scripts.pilot.eval --help
+python -m scripts.pilot.sweep --help
 ```
 
 The [pilot run guide](docs/pilot/RUNME.md) covers data recovery, generation,
@@ -144,13 +143,13 @@ training arms, and evaluation. Specifications are in
 
 ```bash
 # Generate the spatial dataset.
-PYTHONPATH=src python -m scripts.generate_data --config configs/pi_jepa/default.yaml
+python -m scripts.generate_data --config configs/pi_jepa/default.yaml
 
 # Train the physics-informed world model.
-PYTHONPATH=src python -m scripts.train --config configs/pi_jepa/default.yaml
+python -m scripts.train --config configs/pi_jepa/default.yaml
 
 # Compare with the physics-off ablation.
-PYTHONPATH=src python -m scripts.train --config benchmarks/pi_jepa/no_physics.yaml
+python -m scripts.train --config benchmarks/pi_jepa/no_physics.yaml
 ```
 
 ## Repository map
@@ -198,7 +197,7 @@ files and their specifications. Large arrays and generated outputs stay outside 
 Implemented: reference physics, synthetic generators, world models, comparison
 architectures, training and evaluation tools, and automated checks.
 
-Next: align the flattened source paths, recover the full heating dataset, run the
+Next: recover the full heating dataset, run the
 controlled model comparisons, and add ARCO-Mars climate checks. The current
 heating simulator holds pressure at 610 Pa; variable-pressure predictions require
 coupled atmospheric CO₂ mass dynamics.
@@ -216,4 +215,4 @@ coupled atmospheric CO₂ mass dynamics.
 | [Kubernetes](k8s/README.md) | Container and cluster execution |
 
 For local verification, use `python -m pytest -q`, `ruff check src scripts benchmarks tests`,
-and `python -m mkdocs build --strict` after the source-layout settings are aligned.
+and `python -m mkdocs build --strict`.

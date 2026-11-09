@@ -44,7 +44,7 @@ class PIJEPA(nn.Module):
     Parameters
     ----------
     cfg:
-        :class:`marsworld.config.ModelConfig` instance.
+        :class:`config.ModelConfig` instance.
     grid_size:
         Spatial resolution of the fields (needed by the decoder).
     """

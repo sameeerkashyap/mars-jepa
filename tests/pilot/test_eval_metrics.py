@@ -123,7 +123,7 @@ def test_no_eval_labels_outside_eval():
     calibration, data windows and metric_defs never reference them."""
     files = [str(Path(SCRIPT_ROOT) / name) for name in ("train.py", "calibrate.py")]
     files += [str(REPO_ROOT / name) for name in (
-        "src/marsworld/data/windows.py", "src/marsworld/physics/surface_torch.py",
+        "src/data/windows.py", "src/physics/surface_torch.py",
         "benchmarks/metrics.py")]
     files += MODEL_FILES
     assert files and all(Path(f).is_file() for f in files)

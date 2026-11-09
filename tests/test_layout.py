@@ -2,6 +2,7 @@
 
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -16,6 +17,7 @@ from scripts.pilot.train import load_phase2_config
 
 def test_pilot_defaults_work_outside_repository(monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
+    assert REPO_ROOT == Path(__file__).resolve().parents[1]
     assert load_config()["grid"]["n"] == 64
     assert load_ebm_params()["C_eff"] > 0
     assert load_phase2_config()["data"]["data_dir"] == str(PILOT_DATA)
@@ -24,7 +26,7 @@ def test_pilot_defaults_work_outside_repository(monkeypatch, tmp_path):
 
 
 @pytest.mark.parametrize("arm,module", [
-    ("jepa", "marsworld.models.latent_jepa.model"),
+    ("jepa", "models.latent_jepa.model"),
     ("gru", "benchmarks.gru.model"),
     ("gru_noforce", "benchmarks.gru.model"),
     ("rssm", "benchmarks.rssm.model"),
@@ -48,8 +50,21 @@ def test_installed_pilot_command_outside_repository(tmp_path):
     assert "--arm" in result.stdout and "--data-dir" in result.stdout
 
 
+def test_installed_pilot_loads_defaults_outside_repository(tmp_path):
+    subprocess.run(
+        [sys.executable, "-c",
+         "from scripts.pilot.train import load_phase2_config; "
+         "from physics.surface import load_config; "
+         "from physics.surface_torch import load_ebm_params; "
+         "assert load_config()['grid']['n'] == 64; "
+         "assert load_phase2_config()['protocol']['K'] == 40; "
+         "assert load_ebm_params()['C_eff'] > 0"],
+        cwd=tmp_path, capture_output=True, text=True, check=True,
+    )
+
+
 def test_data_code_and_metadata_are_not_ignored():
-    paths = ["src/marsworld/data/solver.py", "src/marsworld/data/dataset.py",
+    paths = ["src/data/solver.py", "src/data/dataset.py",
              "data/specification/pilot/config.yaml",
              "data/synthetic/pilot/manifest.json",
              "tests/pilot/fixtures/regression_ref.npz"]

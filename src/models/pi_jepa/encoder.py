@@ -3,7 +3,7 @@
 A compact convolutional encoder maps a field ``(C, H, W)`` to a latent vector
 ``z`` of dimension ``latent_dim``. The same class is instantiated twice in the
 PI-JEPA model: once as the trainable *context* encoder and once as the
-EMA-updated *target* encoder (see :class:`marsworld.models.pi_jepa.jepa.PIJEPA`).
+EMA-updated *target* encoder (see :class:`models.pi_jepa.jepa.PIJEPA`).
 """
 
 from __future__ import annotations

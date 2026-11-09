@@ -36,9 +36,14 @@ dev = [
 marsworld-generate = "scripts.generate_data:main"
 marsworld-train = "scripts.train:main"
 
+[tool.setuptools]
+py-modules = ["config", "paths"]
+package-dir = {"" = "src", "scripts" = "scripts", "benchmarks" = "benchmarks"}
+
 [tool.setuptools.packages.find]
 where = ["src", "."]
-include = ["marsworld*", "benchmarks*", "scripts*"]
+include = ["models*", "physics*", "training*", "data*", "benchmarks*", "scripts*"]
+namespaces = false
 
 [tool.ruff]
 line-length = 100

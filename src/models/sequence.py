@@ -42,4 +42,3 @@ class BaseSeqModel(nn.Module):
 
     def rollout(self, Ts_ctx, S_full, Fa_full, lat, sample=False):
         raise NotImplementedError
-

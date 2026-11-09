@@ -7,8 +7,8 @@ data-efficiency subsampling.
 
 ## Solver
 
-::: marsworld.data.solver
+::: data.solver
 
 ## Dataset
 
-::: marsworld.data.dataset
+::: data.dataset

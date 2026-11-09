@@ -17,11 +17,11 @@ Start with [what we model and which data we use](DATA_AND_MODELING.md).
 
 | Folder | Purpose |
 |---|---|
-| `src/marsworld/models/pi_jepa/` | Spatial world-model architecture |
-| `src/marsworld/models/latent_jepa/` | Latitude-band latent world model |
+| `src/models/pi_jepa/` | Spatial world-model architecture |
+| `src/models/latent_jepa/` | Latitude-band latent world model |
 | `benchmarks/` | GRU, RSSM, Transformer, hybrid, and linear comparisons |
-| `src/marsworld/physics/` | Reference physics, simplified model, physical losses |
-| `src/marsworld/data/` | Dataset readers and spatial generator code |
+| `src/physics/` | Reference physics, simplified model, physical losses |
+| `src/data/` | Dataset readers and spatial generator code |
 | `data/synthetic/` | Generated arrays by experiment |
 | `data/arco_mars/` | Future historical Mars records |
 | `data/specification/` | Physical settings, splits, hashes, thresholds |

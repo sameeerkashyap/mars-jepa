@@ -1,7 +1,7 @@
 # Phase 2 (ML) — design, assumptions, hyperparameters
 
 > Folder update: commands are in `scripts/pilot/`, model comparisons in
-> `benchmarks/`, physics and readers in `src/marsworld/`, and specifications
+> `benchmarks/`, physics and readers in `src/`, and specifications
 > in `data/specification/pilot/`. See [the current run guide](RUNME.md).
 
 Checkpoint C of the Mars 1-D climate pilot: the learned-model phase. This file
@@ -289,4 +289,3 @@ imports from `dataio`: `train.py` uses only `load_split` + `subsample_train`;
 `calibrate.py` uses only `load_split(..., calibration_mode=True)`; `eval.py` is
 the only user of `load_split_eval_labels`. Per-file `load_eval_labels(path)` and
 `load_hidden(path)` remain. See the `dataio.py` module docstring.
-

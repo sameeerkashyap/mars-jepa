@@ -6,4 +6,4 @@ conservation, matching the synthetic solver's periodic boundaries.
 
 ## API
 
-::: marsworld.physics.losses
+::: physics.losses

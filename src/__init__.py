@@ -9,10 +9,10 @@ restructuring the codebase.
 
 Sub-packages
 ------------
-- :mod:`marsworld.data`     synthetic PDE solver + torch datasets
-- :mod:`marsworld.models`   encoder / predictor / decoder / PI-JEPA model
-- :mod:`marsworld.physics`  PDE residual & conservation diagnostics/losses
-- :mod:`marsworld.training` trainer loop and composite loss
+- :mod:`data`     synthetic PDE solver + torch datasets
+- :mod:`models`   encoder / predictor / decoder / PI-JEPA model
+- :mod:`physics`  PDE residual & conservation diagnostics/losses
+- :mod:`training` trainer loop and composite loss
 - :mod:`scripts.utils`    logging and reproducibility helpers
 """
 
