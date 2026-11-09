@@ -19,8 +19,8 @@ spec:
       containers:
         - name: generate
           image: your-registry/marsworld:latest   # <-- replace
-          command: ["python", "scripts/generate_data.py"]
-          args: ["--config", "configs/default.yaml"]
+          command: ["python", "-m", "scripts.generate_data"]
+          args: ["--config", "configs/pi_jepa/default.yaml"]
           env:
             - name: MARSWORLD_LOGLEVEL
               value: INFO

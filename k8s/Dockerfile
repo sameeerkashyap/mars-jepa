@@ -18,9 +18,10 @@ COPY pyproject.toml README.md ./
 COPY src ./src
 COPY scripts ./scripts
 COPY configs ./configs
+COPY benchmarks ./benchmarks
 RUN pip install --no-cache-dir -e .
 
 # Default: train using the baked-in default config, auto-generating data if the
 # mounted volume is empty. Override `command`/`args` in the Job spec as needed.
-ENTRYPOINT ["python", "scripts/train.py"]
-CMD ["--config", "configs/default.yaml", "--auto-generate"]
+ENTRYPOINT ["python", "-m", "scripts.train"]
+CMD ["--config", "configs/pi_jepa/default.yaml", "--auto-generate"]

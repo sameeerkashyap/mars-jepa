@@ -3,7 +3,7 @@
 
 Usage
 -----
-    python scripts/train.py --config configs/default.yaml
+    python -m scripts.train --config configs/pi_jepa/default.yaml
 
 Expects the dataset produced by ``scripts/generate_data.py`` to exist at
 ``<data_dir>/<parameter>.npz``. Designed to be the container entrypoint for a
@@ -15,19 +15,19 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from marsworld.config import load_config
-from marsworld.data.dataset import make_dataloaders
-from marsworld.data.solver import generate_dataset, save_dataset
-from marsworld.models.jepa import PIJEPA
-from marsworld.training.trainer import Trainer
-from marsworld.utils.logging import get_logger, set_seed
+from config import load_config
+from data.dataset import make_dataloaders
+from data.solver import generate_dataset, save_dataset
+from models.pi_jepa.jepa import PIJEPA
+from training.trainer import Trainer
+from scripts.utils import get_logger, set_seed
 
 logger = get_logger("train")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", default="configs/default.yaml")
+    parser.add_argument("--config", default="configs/pi_jepa/default.yaml")
     parser.add_argument(
         "--auto-generate",
         action="store_true",

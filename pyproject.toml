@@ -17,6 +17,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+benchmark = [
+    "scipy>=1.10,<2",
+    "matplotlib>=3.7,<4",
+    "pandas>=1.5,<3",
+]
 docs = [
     "mkdocs>=1.5",
     "mkdocs-material>=9.5",
@@ -32,12 +37,22 @@ marsworld-generate = "scripts.generate_data:main"
 marsworld-train = "scripts.train:main"
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["src", "."]
+include = ["marsworld*", "benchmarks*", "scripts*"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py39"
 
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+# Preserve the pilot's compact scientific notation during the folder move.
+"scripts/pilot/*.py" = ["E702", "E731", "E741"]
+"tests/pilot/*.py" = ["E702", "E731", "E741"]
+"tests/test_smoke.py" = ["E402"]  # torch imports follow importorskip
+
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 testpaths = ["tests"]

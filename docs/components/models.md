@@ -6,16 +6,16 @@ stop-gradient targets.
 
 ## PI-JEPA
 
-::: marsworld.models.jepa
+::: marsworld.models.pi_jepa.jepa
 
 ## Encoder
 
-::: marsworld.models.encoder
+::: marsworld.models.pi_jepa.encoder
 
 ## Predictor
 
-::: marsworld.models.predictor
+::: marsworld.models.pi_jepa.predictor
 
 ## Decoder
 
-::: marsworld.models.decoder
+::: marsworld.models.pi_jepa.decoder

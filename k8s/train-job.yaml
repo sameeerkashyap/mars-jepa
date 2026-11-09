@@ -19,8 +19,8 @@ spec:
       containers:
         - name: train
           image: your-registry/marsworld:latest   # <-- replace
-          command: ["python", "scripts/train.py"]
-          args: ["--config", "configs/default.yaml", "--auto-generate"]
+          command: ["python", "-m", "scripts.train"]
+          args: ["--config", "configs/pi_jepa/default.yaml", "--auto-generate"]
           env:
             - name: MARSWORLD_LOGLEVEL
               value: INFO

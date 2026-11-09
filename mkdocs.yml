@@ -41,7 +41,12 @@ extra_javascript:
 
 nav:
   - Home: index.md
+  - Data and modeling: DATA_AND_MODELING.md
   - Architecture: architecture.md
+  - Heating pilot:
+      - Run guide: pilot/RUNME.md
+      - Paper revision: pilot/PAPER_REVISION_PLAN.md
+      - Original research plan: Mars_PI_JEPA_Research_Plan.md
   - Components:
       - Configuration: components/config.md
       - Data & Solver: components/data.md
