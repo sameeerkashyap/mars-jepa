@@ -4,15 +4,14 @@ sweep.py -- standalone, resumable sweep driver.  I (the reviewer) run this.
 Grid (config_phase2.yaml -> sweep):
   arms x physics{off,A,B where applicable} x fraction{0.1,0.3,1.0} x 10 seeds.
 
-Each run: train one configuration, evaluate on BOTH test tiers, append ONE row
-to results.csv.  Resumable: a run whose (arm,physics,fraction,seed) already has
-a row in results.csv is skipped.  Per-run logs go to logs/<tag>.log.
+Each run: train one configuration, evaluate on BOTH test tiers, then save its row
+immediately. Successful rows are skipped on restart; failed rows are retried.
 
 Parallelism: multiprocessing Pool on CPU (default).  GPU-aware: if the resolved
 device is cuda/mps, workers is forced to 1 (sequential) to avoid device
 contention.  Each worker runs on CPU unless --device overrides.
 
-DO NOT expect the agent to launch the full sweep; use --limit / --tiny to smoke.
+Use --output-dir to keep full experiments separate from smoke checks.
 """
 
 from __future__ import annotations
@@ -21,6 +20,7 @@ import argparse
 import csv
 import json
 import os
+from pathlib import Path
 import time
 import traceback
 from multiprocessing import Pool
@@ -81,7 +81,8 @@ def _load_done(results_path):
     if os.path.exists(results_path):
         with open(results_path) as fh:
             for row in csv.DictReader(fh):
-                done.add(row["tag"])
+                if row.get("status") == "ok":
+                    done.add(row["tag"])
     return done
 
 
@@ -102,10 +103,12 @@ def _append_row(results_path, row):
 
 def run_one(spec):
     (arm, phys, frac, seed, device, epochs, max_batches, data_dir,
-     tiers) = spec
+     tiers, output_dir) = spec
+    log_dir = os.path.join(output_dir, "logs")
+    run_dir = os.path.join(output_dir, "runs")
     tag = tag_for(arm, phys, frac, seed)
-    os.makedirs(LOGDIR, exist_ok=True)
-    logpath = os.path.join(LOGDIR, f"{tag}.log")
+    os.makedirs(log_dir, exist_ok=True)
+    logpath = os.path.join(log_dir, f"{tag}.log")
     t0 = time.time()
     row = {k: "" for k in FIELDS}
     row.update(tag=tag, arm=arm, physics=phys, fraction=frac, seed=seed)
@@ -125,7 +128,7 @@ def run_one(spec):
                                            p2["physics"]["lambda_default"], p2,
                                            full, device, epochs=epochs,
                                            max_batches=max_batches)
-                rd = os.path.join(RUNDIR, f"{tag}_m{mi}")
+                rd = os.path.join(run_dir, f"{tag}_m{mi}")
                 save_run(rd, m, stats, info, p2)
                 member_dirs.append(rd)
             val_loss = info["val_loss"]
@@ -136,7 +139,7 @@ def run_one(spec):
             model, stats, info = train_one(arm, phys, frac, seed, lam, p2, full,
                                            device, epochs=epochs,
                                            max_batches=max_batches)
-            rd = os.path.join(RUNDIR, tag)
+            rd = os.path.join(run_dir, tag)
             save_run(rd, model, stats, info, p2)
             val_loss, n_params = info["val_loss"], info["n_params"]
             row["lambda"] = info["lambda"]
@@ -166,7 +169,7 @@ def run_one(spec):
                 row.update(t2_crps=cal["crps"], t2_cov90=cal["coverage_90"],
                            t2_spread_ood_rho=cal["spread_ood_spearman"])
         # persist full metrics for analyze.py (rollout-vs-horizon curves etc.)
-        edir = os.path.join(RUNDIR, tag)
+        edir = os.path.join(run_dir, tag)
         os.makedirs(edir, exist_ok=True)
         with open(os.path.join(edir, "eval.json"), "w") as fh:
             json.dump({"tiers": mets}, fh)
@@ -181,6 +184,15 @@ def run_one(spec):
     return row
 
 
+def _record_rows(results_path, rows):
+    failures = 0
+    for row in rows:
+        _append_row(results_path, row)
+        failures += row["status"] != "ok"
+        print(f"[sweep] {row['tag']} {row['status']} {row['wall_sec']}s", flush=True)
+    return failures
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--workers", type=int, default=1)
@@ -192,9 +204,16 @@ def main():
                     help="only run the first N pending configs (smoke)")
     ap.add_argument("--tiny", action="store_true",
                     help="tiny grid: first arm of each kind, 1 fraction, 2 seeds")
-    ap.add_argument("--results", default=RESULTS)
-    ap.add_argument("--tiers", nargs="+", default=["tier1", "tier2"])
+    ap.add_argument("--output-dir", default=str(PILOT_OUTPUT))
+    ap.add_argument("--results", default=None)
+    ap.add_argument("--tiers", nargs="+", choices=["tier1", "tier2"],
+                    default=["tier1", "tier2"])
     args = ap.parse_args()
+    if args.workers < 1:
+        ap.error("--workers must be positive")
+    Path(args.output_dir).mkdir(parents=True, exist_ok=True)
+    args.results = args.results or str(Path(args.output_dir) / "results.csv")
+    Path(args.results).parent.mkdir(parents=True, exist_ok=True)
 
     p2 = load_phase2_config()
     device = args.device or pick_device(p2["train"]["device"])
@@ -225,16 +244,16 @@ def main():
           f"({len(done)} done), workers={workers}, device={device}")
 
     specs = [(a, p, f, s, device, args.epochs, args.max_batches, args.data_dir,
-              args.tiers) for (a, p, f, s) in pending]
+              args.tiers, args.output_dir) for (a, p, f, s) in pending]
 
     if workers == 1:
-        rows = [run_one(sp) for sp in specs]
+        failures = _record_rows(args.results, map(run_one, specs))
     else:
         with Pool(workers) as pool:
-            rows = pool.map(run_one, specs)
-    for row in rows:
-        _append_row(args.results, row)
-    print(f"[sweep] wrote {len(rows)} rows -> {args.results}")
+            failures = _record_rows(args.results, pool.imap_unordered(run_one, specs))
+    print(f"[sweep] wrote {len(specs)} rows -> {args.results}; failures={failures}")
+    if failures:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

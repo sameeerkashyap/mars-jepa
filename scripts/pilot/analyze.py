@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+from pathlib import Path
 
 import matplotlib
 import numpy as np
@@ -416,12 +417,16 @@ def write_report(hyps, figs, out_json=str(PILOT_OUTPUT / "analysis_report.json")
 
 
 def main():
-    PILOT_OUTPUT.mkdir(parents=True, exist_ok=True)
+    global FIGDIR
     ap = argparse.ArgumentParser()
     ap.add_argument("--results", default=str(PILOT_OUTPUT / "results.csv"))
     ap.add_argument("--thresholds", default=str(PILOT_SPEC / "thresholds.yaml"))
     ap.add_argument("--run-root", default=str(PILOT_OUTPUT / "runs"))
+    ap.add_argument("--output-dir", default=str(PILOT_OUTPUT))
     args = ap.parse_args()
+    output = Path(args.output_dir)
+    output.mkdir(parents=True, exist_ok=True)
+    FIGDIR = str(output / "figures_phase2")
 
     df = load_results(args.results)
     thr = yaml.safe_load(open(args.thresholds)) or {}
@@ -432,7 +437,8 @@ def main():
         "calibration": calibration_figure(df),
     }
     hyps = evaluate_hypotheses(df, thr)
-    write_report(hyps, figs, ebm=ebm_metric_table(df),
+    write_report(hyps, figs, out_json=str(output / "analysis_report.json"),
+                 out_md=str(output / "analysis_report.md"), ebm=ebm_metric_table(df),
                  primary=primary_vs_baselines(df))
     print(json.dumps(hyps, indent=2))
     print("figures:", figs)
