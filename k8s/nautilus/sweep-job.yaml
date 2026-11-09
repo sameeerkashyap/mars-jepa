@@ -52,7 +52,7 @@ spec:
               /bin/sh scripts/pilot/run_sweep.sh
           env:
             - name: MARSWORLD_REVISION
-              value: REPLACE_WITH_FULL_COMMIT
+              value: ddbb553a317afbc3f13cc25f6986d7240130a28d
             - name: MARSWORLD_RUN_DIR
               value: /results/pilot-20261109
             - name: MARSWORLD_WORKERS
