@@ -192,7 +192,7 @@ class DreamerControlStudy(Study):
                 seconds += self.estimated_seconds(task)*1.5 + max(300., max(
                     (j.get('startup_seconds', 0.) for j in self.state['jobs'].values()), default=0.))
         cpu, _ = self.remaining()
-        if seconds*2/3600 > cpu:
+        if seconds > 0 and seconds*2/3600 > cpu:
             raise RuntimeError(f'Stage not admitted: projected {seconds*2/3600:.3f} CPU core-hours exceed remaining {cpu:.3f}')
         if any(task[0] in ('actor', 'confirm', 'final') for task in tasks):
             if not self.state.get('readiness_passed') or 'previous_sha256' not in self.state:
@@ -202,9 +202,15 @@ class DreamerControlStudy(Study):
 
     def batch(self, tasks):
         """Persist submission intent; recover an interrupted apply without rerunning work."""
-        self.admit(tasks)
         results = []
+        admission_error = None
         for start in range(0, len(tasks), 2):
+            if admission_error is None:
+                try:
+                    self.admit(tasks[start:])
+                except RuntimeError as error:
+                    # Collect existing work before reporting blocked new submissions.
+                    admission_error = error
             names = []
             for task in tasks[start:start+2]:
                 name, manifest = self.manifest(task)
@@ -215,6 +221,8 @@ class DreamerControlStudy(Study):
                 if job and ('error' in job or 'record' in job):
                     raise RuntimeError(f'Previous task {name} failed; no automatic workload retry')
                 if not job:
+                    if admission_error is not None:
+                        continue
                     active = json.loads(kubectl('get', 'jobs', '-l', 'app=marsworld-small-study', '-o', 'json').stdout)
                     running = sum(not any(c['type'] in ('Complete', 'Failed') and c['status'] == 'True'
                                   for c in j.get('status', {}).get('conditions', [])) for j in active['items'])
@@ -245,8 +253,10 @@ class DreamerControlStudy(Study):
                         failures.append(error)
                 if failures:
                     raise failures[0]
-                if any(row['result'].get('readiness_failed') for row in results):
+                if admission_error is None and any(row['result'].get('readiness_failed') for row in results):
                     return results
+        if admission_error is not None:
+            raise admission_error
         return results
 
     def stage(self, tasks, phase):

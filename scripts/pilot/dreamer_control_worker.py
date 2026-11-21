@@ -19,7 +19,7 @@ from benchmarks.dreamer_control.climate import ClimateVectorEnv, climate_imagina
 from data.control import generate_dataset, load_dataset
 from benchmarks.dreamer_control.learner import versions
 from scripts.pilot.dreamer_control_forecast import forecast_validation, readiness, fit_response_baseline
-from scripts.pilot.dreamer_control import digest
+from scripts.pilot.dreamer_control import digest, freeze_confirmation
 from scripts.pilot.small_study import write_json
 
 
@@ -289,13 +289,13 @@ def final_evaluation(args, config):
     if (frozen['source_sha256'] != args.source or frozen['config_sha256'] != digest(config)
             or frozen['seeds'] != list(range(201, 206))):
         raise ValueError('Final evaluation freeze identity mismatch')
+    freeze_confirmation(frozen['runs'], frozen['source_sha256'], frozen['config_sha256'],
+                        frozen['data_sha256'], frozen['baseline'], frozen['recipe'])
     hashes, _, _ = datasets(args.base, args.rung)
     if hashes != frozen['data_sha256']:
         raise ValueError('Frozen dataset changed')
     learners = []
     for row in frozen['runs']:
-        if row['recipe_sha256'] != digest({k: frozen['recipe'][k] for k in ('learning_rate', 'horizon')}):
-            raise ValueError('Frozen selected recipe changed')
         path = args.base/row['checkpoint']
         if file_hash(path) != row['checkpoint_sha256']:
             raise ValueError('Frozen checkpoint changed')

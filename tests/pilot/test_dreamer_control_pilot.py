@@ -54,6 +54,11 @@ def test_freeze_requires_all_five_matching_hashes(tmp_path):
     rows[3]['data_sha256'] = ['changed']
     with pytest.raises(ValueError, match='identity'):
         freeze_confirmation(rows, 'source', 'config', ['train', 'validation'], 'constant_2.5', recipe)
+    rows[3]['data_sha256'] = ['train', 'validation']
+    for changed in (dict(learning_rate=.00008, horizon=3), dict(learning_rate=.00004, horizon=6)):
+        with pytest.raises(ValueError, match='identity'):
+            freeze_confirmation(rows, 'source', 'config', ['train', 'validation'], 'constant_2.5', changed)
+    assert freeze_confirmation(rows, 'source', 'config', ['train', 'validation'], 'constant_2.5', recipe)['seeds'] == list(range(201, 206))
 
 
 def previous_ledger(tmp_path, phase='complete'):
@@ -174,6 +179,10 @@ def test_worker_recovery_and_final_freeze_are_checked_before_any_test_outcome(tm
     guard_checkpoint = torch.load(actor_out/'resume.pt', weights_only=False)
     assert guard_checkpoint['behavior_updates'] == 0
     assert not (actor_out/'best.pt').exists()
+    for changed in (dict(learning_rate=.00008, horizon=3), dict(learning_rate=.00004, horizon=6)):
+        monkeypatch.setenv('MARSWORLD_RECIPE', json.dumps(changed))
+        with pytest.raises(ValueError, match='identity changed'):
+            worker.train_stage(args, config)
     learner = worker.new_learner(config, 201, .00004)
     rows = []
     for seed in range(201, 206):
@@ -182,7 +191,8 @@ def test_worker_recovery_and_final_freeze_are_checked_before_any_test_outcome(tm
                         seed=seed, mode='confirm', variant='selected', rung=12,
                         recipe_sha256=digest(dict(learning_rate=.00004, horizon=3)))
         worker.save_recovery(learner, path, {'identity': identity, 'seed_cursor': 3})
-        rows.append(dict(**identity, checkpoint=path.name, checkpoint_sha256=worker.file_hash(path)))
+        rows.append(dict(**identity, checkpoint=path.name, checkpoint_sha256=worker.file_hash(path),
+                         validation_rmse_K=.5))
     frozen = dict(source_sha256='fixture', config_sha256=digest(config), data_sha256=hashes,
                   seeds=list(range(201, 206)), baseline='no_heat', runs=rows,
                   recipe=dict(learning_rate=.00004, horizon=3))
@@ -192,6 +202,16 @@ def test_worker_recovery_and_final_freeze_are_checked_before_any_test_outcome(tm
     seen = []
     monkeypatch.setattr(worker, 'evaluate', lambda learner, seeds, baseline, initial_states, **kwargs:
                         seen.append(list(seeds)) or [])
+    invalid_runs = [rows[:-1], rows[:-1]+[rows[0]], [{**row, 'source_sha256': 'changed'} for row in rows]]
+    with monkeypatch.context() as guard:
+        def no_datasets(*args):
+            raise AssertionError('Invalid freeze reached dataset access')
+        guard.setattr(worker, 'datasets', no_datasets)
+        for runs in invalid_runs:
+            guard.setenv('MARSWORLD_FROZEN', json.dumps({**frozen, 'runs': runs}))
+            with pytest.raises(ValueError, match='five|identity'):
+                worker.final_evaluation(args, config)
+    assert not seen and not (final/'EVALUATION_STARTED.json').exists()
     original = rows[-1]['checkpoint_sha256']
     rows[-1]['checkpoint_sha256'] = '0'*64
     monkeypatch.setenv('MARSWORLD_FROZEN', json.dumps(frozen))
@@ -199,6 +219,11 @@ def test_worker_recovery_and_final_freeze_are_checked_before_any_test_outcome(tm
         worker.final_evaluation(args, config)
     assert not seen and not (final/'EVALUATION_STARTED.json').exists()
     rows[-1]['checkpoint_sha256'] = original
+    for changed in (dict(learning_rate=.00008, horizon=3), dict(learning_rate=.00004, horizon=6)):
+        monkeypatch.setenv('MARSWORLD_FROZEN', json.dumps({**frozen, 'recipe': changed}))
+        with pytest.raises(ValueError, match='identity'):
+            worker.final_evaluation(args, config)
+    assert not seen and not (final/'EVALUATION_STARTED.json').exists()
     monkeypatch.setenv('MARSWORLD_FROZEN', json.dumps(frozen))
     assert len(worker.final_evaluation(args, config)['records']) == 5
     assert seen == [list(range(5200, 5220))]*5
@@ -245,3 +270,83 @@ def test_interrupted_submission_resumes_same_job_and_reuses_completed_result(tmp
     assert resumed.batch([task])[0]['result']['recovery_next_update_exact']
     assert resumed.batch([task])[0]['result']['recovery_next_update_exact']
     assert len(submitted) == 1
+
+
+@pytest.fixture
+def completed_transport(monkeypatch):
+    import json
+    from types import SimpleNamespace
+    from scripts.pilot import dreamer_control as driver
+    applied, existing = [], set()
+    result = {'collected': True}
+
+    def transport(*args, **kwargs):
+        if args[:2] == ('apply', '-f'):
+            name = kwargs['value']['metadata']['name']
+            applied.append(name)
+            existing.add(name)
+            payload = {}
+        elif args[:2] == ('get', 'jobs'):
+            payload = {'items': []}
+        elif args[:2] == ('get', 'job'):
+            if args[2] not in existing:
+                return SimpleNamespace(stdout='', stderr='NotFound', returncode=1)
+            payload = {'status': {'succeeded': 1, 'startTime': '2026-01-01T00:00:00Z',
+                       'completionTime': '2026-01-01T12:30:00Z',
+                       'conditions': [{'type': 'Complete', 'status': 'True'}]}}
+        elif args[:2] == ('get', 'pods'):
+            payload = {'items': []}
+        elif args[0] == 'logs':
+            record = {'status': {'status': 'ok', 'wall_seconds': 45000}, 'result': result}
+            return SimpleNamespace(stdout='RESULT_JSON='+json.dumps(record), stderr='', returncode=0)
+        else:
+            raise AssertionError(args)
+        return SimpleNamespace(stdout=json.dumps(payload), stderr='', returncode=0)
+
+    monkeypatch.setattr(driver, 'kubectl', transport)
+    monkeypatch.setattr('scripts.pilot.nautilus_study.kubectl', transport)
+    return applied, existing, result
+
+
+def test_batch_rechecks_actual_charges_before_next_worker_pair(tmp_path, completed_transport):
+    from scripts.pilot.dreamer_control import DreamerControlStudy
+    study = DreamerControlStudy(tmp_path/'study', 'mars-dreamer-ctrl-v1', previous_ledger(tmp_path))
+    study.import_previous()
+    study.state.update(source_sha256='a'*64, configmap='fixture')
+    tasks = [('meter', 'base', seed, 12, 'cpu') for seed in range(101, 105)]
+    with pytest.raises(RuntimeError, match='not admitted'):
+        study.batch(tasks)
+    applied, _, _ = completed_transport
+    assert len(applied) == 2
+    assert all(study.state['jobs'][name]['record']['result']['collected'] for name in applied)
+    assert study.remaining()[0] < 0
+
+
+@pytest.mark.parametrize('include_new', [False, True])
+def test_overbudget_resume_collects_existing_work_without_new_jobs(tmp_path, completed_transport, include_new):
+    from scripts.pilot.dreamer_control import DreamerControlStudy
+    study = DreamerControlStudy(tmp_path/'study', 'mars-dreamer-ctrl-v1', previous_ledger(tmp_path))
+    study.import_previous()
+    study.state.update(source_sha256='a'*64, configmap='fixture')
+    applied, existing, result = completed_transport
+    tasks = [('meter', 'base', seed, 12, 'cpu') for seed in range(101, 105)]
+    record = {'status': {'status': 'ok'}, 'result': {'reused': True}}
+    if include_new:
+        record['result']['readiness_failed'] = True
+        result['readiness_failed'] = True
+    done, _ = study.manifest(tasks[1])
+    running, _ = study.manifest(tasks[3])
+    study.state['jobs'][done] = dict(device='cpu', reserved_seconds=0, charged_seconds=90000, record=record)
+    study.state['jobs'][running] = dict(device='cpu', reserved_seconds=1200, submitted=True)
+    existing.add(running)
+    study.save()
+    resumed = DreamerControlStudy(study.state_dir, study.study_id, study.state['previous_state'])
+    if include_new:
+        with pytest.raises(RuntimeError, match='not admitted'):
+            resumed.batch(tasks)
+    else:
+        study.admit([tasks[1], tasks[3]])
+        assert resumed.batch([tasks[1], tasks[3]]) == [record, resumed.state['jobs'][running]['record']]
+    assert resumed.state['jobs'][running]['record']['result']['collected']
+    assert resumed.state['jobs'][done]['record'] == record
+    assert not applied
