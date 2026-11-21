@@ -55,6 +55,8 @@ class LearnerConfig:
                      "bins", "imagination_horizon", "sequence_length", "batch_size", "replay_episodes"):
             if not isinstance(getattr(self, name), int) or getattr(self, name) <= 0:
                 raise ValueError(f"{name} must be a positive integer")
+        if self.sequence_length < 2:
+            raise ValueError("sequence_length must be at least two for shifted replay targets")
         if self.bins < 2 or self.classes < 2:
             raise ValueError("bins and classes must be at least two")
         if not (self.continuation_horizon > 1 and 0 <= self.lmbda <= 1

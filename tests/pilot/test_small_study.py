@@ -208,6 +208,78 @@ def test_failed_job_without_pod_logs_is_charged_and_recorded(tmp_path, monkeypat
     assert "pod was evicted" in (tmp_path / "evicted.log").read_text()
 
 
+def test_retained_evicted_pod_uses_job_failure_time_and_persists_failure(tmp_path, monkeypatch):
+    study = Study(tmp_path, "mars-test")
+    study.state["jobs"]["evicted"] = {"device": "cuda", "reserved_seconds": 1000,
+                                      "created": 0}
+    failed = {"status": {"startTime": "1970-01-01T00:00:00Z", "failed": 1, "conditions": [
+        {"type": "Failed", "status": "True", "lastTransitionTime": "1970-01-01T00:02:00Z"}]}}
+    pod = {"metadata": {"name": "evicted-pod", "uid": "evicted-id"}, "status": {
+        "phase": "Failed", "reason": "Evicted", "message": "node memory pressure",
+        "startTime": "1970-01-01T00:00:20Z"}}
+    calls = []
+
+    def cluster(*args, **kwargs):
+        calls.append(args)
+        assert args[0] in ("get", "logs"), "failed Job must remain untouched"
+        if args[:2] == ("get", "job"):
+            return SimpleNamespace(stdout=json.dumps(failed))
+        if args[:2] == ("get", "pods"):
+            return SimpleNamespace(stdout=json.dumps({"items": [pod]}))
+        return SimpleNamespace(stdout="", stderr="pod was evicted", returncode=1)
+
+    monkeypatch.setattr(nautilus_study, "kubectl", cluster)
+    with pytest.raises(RuntimeError, match="without a result"):
+        study.collect("evicted")
+    job = Study(tmp_path, "mars-test").state["jobs"]["evicted"]
+    assert job["charged_seconds"] == 100
+    assert job["error"] == failed["status"]
+    assert job["terminal_evidence"] == {"job": failed, "pods": {"items": [pod]}}
+    assert "conservative" in job["allocation_evidence"][0]["basis"]
+    assert (tmp_path / "evicted.log").read_text() == "pod was evicted"
+    assert [call[0] for call in calls] == ["get", "get", "logs"]
+
+
+@pytest.mark.parametrize("retained_pod", [False, True])
+@pytest.mark.parametrize("old_charge", [None, 500])
+def test_failure_without_finish_evidence_keeps_budget_reserved_on_resume(
+        tmp_path, monkeypatch, retained_pod, old_charge):
+    study = Study(tmp_path, "mars-test")
+    study.state.update(configmap="source", source_sha256="a" * 64, images={"cpu": "image"})
+    task = ("train", "gru", 0, 5, "cpu")
+    name, _ = study.manifest(task)
+    study.state["jobs"][name] = {"device": "cpu", "reserved_seconds": 2000, "created": 0}
+    if old_charge is not None:
+        study.state["jobs"][name]["charged_seconds"] = old_charge
+    failed = {"status": {"failed": 1, "conditions": [{"type": "Failed", "status": "True"}]}}
+    pods = {"items": [{"metadata": {"name": "evicted-pod", "uid": "evicted-id"},
+                       "status": {"phase": "Failed", "reason": "Evicted"}}] if retained_pod else []}
+
+    def cluster(*args, **kwargs):
+        assert args[0] in ("get", "logs"), "failed Job must remain untouched"
+        if args[:2] == ("get", "job"):
+            return SimpleNamespace(stdout=json.dumps(failed))
+        if args[:2] == ("get", "pods"):
+            return SimpleNamespace(stdout=json.dumps(pods))
+        return SimpleNamespace(stdout="", stderr="pod was evicted", returncode=1)
+
+    monkeypatch.setattr(nautilus_study, "kubectl", cluster)
+    monkeypatch.setattr(nautilus_study.time, "time", lambda: 1000)
+    with pytest.raises(RuntimeError, match="without a result"):
+        study.collect(name)
+    resumed = Study(tmp_path, "mars-test")
+    job = resumed.state["jobs"][name]
+    assert job["error"] == failed["status"] and job["accounting_unresolved"]
+    assert job["terminal_evidence"] == {"job": failed, "pods": pods}
+    assert "reservation" in job["allocation_evidence"][-1]["basis"]
+    assert (tmp_path / f"{name}.log").read_text() == "pod was evicted"
+    assert resumed.remaining() == (48 - 4000 / 3600, 12)
+    monkeypatch.setattr(nautilus_study.time, "time", lambda: 3000)
+    assert resumed.remaining() == (48 - 6000 / 3600, 12)
+    with pytest.raises(RuntimeError, match="Previous task .* failed"):
+        resumed.batch([task])
+
+
 def test_cpu_only_continuation_skips_gpu_and_persists(tmp_path, monkeypatch):
     study = Study(tmp_path, "mars-test")
     calls = []

@@ -70,8 +70,8 @@ class TorchRLComparison(Study):
                 raise ValueError("TorchRL architecture must match the five-epoch pilot")
             for device in ("cpu", "cuda"):
                 jobs = [j for j in previous["jobs"].values() if j["device"] == device]
-                if any("charged_seconds" not in j for j in jobs):
-                    raise ValueError("Previous jobs must finish before importing their costs")
+                if any("charged_seconds" not in j or j.get("accounting_unresolved") for j in jobs):
+                    raise ValueError("Previous jobs need resolved allocation charges before importing their costs")
                 self.state["jobs"]["previous-" + device] = {
                     "device": device, "reserved_seconds": 0,
                     "charged_seconds": sum(j["charged_seconds"] for j in jobs)}
