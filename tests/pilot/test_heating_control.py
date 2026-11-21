@@ -7,8 +7,10 @@ from physics.surface import load_config
 
 def test_persistent_truth_matches_full_trajectory():
     cfg = load_config()
+    cfg['truth']['storm_rate_per_year'] = 100
     full = run_truth(cfg, F_a=lambda t: 1.0 if t < 10 else 4.0,
                      seed=42, years=20 / cfg['planet']['year_sols'])
+    assert np.ptp(full['tau'], axis=0).max() > .1
     sim = TruthSimulation(cfg, seed=42, total_sol=20)
     first = sim.advance(10, 1.0)
     second = sim.advance(10, 4.0)
@@ -113,3 +115,10 @@ def test_reserved_conditions_are_rejected():
 
     with pytest.raises(ValueError, match='reserved'):
         HeatingControl().reset(9000)
+
+
+def test_persistent_duration_cannot_round_away_clock_time():
+    sim = TruthSimulation(load_config(), seed=0, total_sol=120)
+    with pytest.raises(ValueError, match='whole number'):
+        sim.advance(20.00001)
+    assert sim.t_sol == 0

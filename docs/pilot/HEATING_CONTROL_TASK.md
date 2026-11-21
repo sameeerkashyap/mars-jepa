@@ -158,6 +158,32 @@ GPU-hours, and no Nautilus jobs. These are distinct occupancy and utilization
 charges; use the occupancy figure for conservative budget admission. Test
 execution is separate from this experiment charge.
 
+An explicitly exploratory follow-up shifts the same conditions by 20 and 40
+sols without changing v1. Both full windows remain below the 10% astronomical
+winter threshold. The fixed original storm draw is kept exactly, including its
+Gaussian tails. No new storm pulses are drawn in the extended integration
+horizon. This pairing isolates the start-time effect, but it does not establish
+robustness to extra late storms. See `results/control_later_windows.json`.
+
+| Start offset, sols | No heat | Constant | Seasonal | Threshold | Best privileged pulse |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 0 | 10.839924 | 12.180202 | 12.539672 | 10.851056 | 11.423109 |
+| 20 | 7.386842 | 8.635097 | 9.045555 | 7.484818 | 7.874968 |
+| 40 | 4.814655 | 5.912982 | 6.364519 | 5.085986 | 5.274285 |
+
+Entries are mean episode RMSE in K over the same five training conditions.
+All ten prescribed pulse placements were checked at each offset; this adds no
+new search family. Positive heat still fails to beat no heat. Recommend keeping
+the astronomical onset rule fixed for the v1 record; selecting a favorable
+start from these outcomes would need a new declared task. Training remains
+gated. The user must decide whether to retain this negative result or change
+the task. This does not prove a global optimum or task infeasibility.
+
+The follow-up used 71.53 wall seconds at one core (0.01987 core-hours),
+62.92 process CPU seconds (0.01748 CPU-hours), and zero GPU-hours. The total
+simulator-screen occupancy is 0.03912 core-hours. Reproduce with the same
+command plus `--later-windows` and a separate output path.
+
 ## Verification boundary
 
 The focused tests compare full and stepped integration bit for bit for hidden

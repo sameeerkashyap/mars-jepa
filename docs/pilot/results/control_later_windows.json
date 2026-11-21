@@ -1,0 +1,1331 @@
+{
+  "exploratory": true,
+  "accepted_task_changed": false,
+  "disturbance_rule": "Original onset-screen draw; no redraw beyond original nominal horizon",
+  "development_seeds": [
+    5000,
+    5001,
+    5002,
+    5003,
+    5004
+  ],
+  "start_offsets_sol": [
+    20,
+    40
+  ],
+  "mean_tracking_rmse_K": {
+    "20": {
+      "zero": 7.386842232686827,
+      "constant": 8.635096624274901,
+      "seasonal": 9.045555342990752,
+      "truth_pulse_00": 10.420315461220039,
+      "truth_pulse_01": 10.063112097518589,
+      "truth_pulse_02": 9.711587146630283,
+      "truth_pulse_03": 9.370636835822037,
+      "truth_pulse_04": 9.045555342990752,
+      "truth_pulse_05": 8.743896363913684,
+      "truth_pulse_06": 8.47911833668392,
+      "truth_pulse_07": 8.257881362061285,
+      "truth_pulse_08": 8.065411845771141,
+      "truth_pulse_09": 7.874967955565092,
+      "threshold": 7.484817730089508
+    },
+    "40": {
+      "zero": 4.814655193228587,
+      "constant": 5.912982293106259,
+      "seasonal": 6.364519441186272,
+      "truth_pulse_00": 7.933282160516249,
+      "truth_pulse_01": 7.512003234304361,
+      "truth_pulse_02": 7.102224220936257,
+      "truth_pulse_03": 6.713549499549873,
+      "truth_pulse_04": 6.364519441186272,
+      "truth_pulse_05": 6.066384583535579,
+      "truth_pulse_06": 5.802004728589899,
+      "truth_pulse_07": 5.570044283722983,
+      "truth_pulse_08": 5.386698967642317,
+      "truth_pulse_09": 5.2742853702582115,
+      "threshold": 5.085985561882238
+    }
+  },
+  "rows": [
+    {
+      "seed": 5000,
+      "start_offset_sol": 20,
+      "controller": "zero",
+      "tracking_rmse_K": 7.414625865608113,
+      "heat_used_Wm2_sol": 0.0,
+      "within_half_K_fraction": 0.08125,
+      "max_deviation_K": 21.432532759866632
+    },
+    {
+      "seed": 5000,
+      "start_offset_sol": 20,
+      "controller": "constant",
+      "tracking_rmse_K": 8.67507167480095,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.06875,
+      "max_deviation_K": 21.843422544441694
+    },
+    {
+      "seed": 5000,
+      "start_offset_sol": 20,
+      "controller": "seasonal",
+      "tracking_rmse_K": 9.091335144150293,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.04791666666666667,
+      "max_deviation_K": 21.432532759866632
+    },
+    {
+      "seed": 5000,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_00",
+      "tracking_rmse_K": 10.44217045089662,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.07708333333333334,
+      "max_deviation_K": 25.58498198330173
+    },
+    {
+      "seed": 5000,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_01",
+      "tracking_rmse_K": 10.087064389701231,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.07291666666666667,
+      "max_deviation_K": 22.939725578113098
+    },
+    {
+      "seed": 5000,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_02",
+      "tracking_rmse_K": 9.739608712607769,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.06875,
+      "max_deviation_K": 21.432532759866632
+    },
+    {
+      "seed": 5000,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_03",
+      "tracking_rmse_K": 9.405848787144269,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.0625,
+      "max_deviation_K": 21.432532759866632
+    },
+    {
+      "seed": 5000,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_04",
+      "tracking_rmse_K": 9.091335144150293,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.04791666666666667,
+      "max_deviation_K": 21.432532759866632
+    },
+    {
+      "seed": 5000,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_05",
+      "tracking_rmse_K": 8.801886758833808,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.05,
+      "max_deviation_K": 21.432532759866632
+    },
+    {
+      "seed": 5000,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_06",
+      "tracking_rmse_K": 8.547007751202637,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.05416666666666667,
+      "max_deviation_K": 21.432532759866632
+    },
+    {
+      "seed": 5000,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_07",
+      "tracking_rmse_K": 8.330803549424791,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.04375,
+      "max_deviation_K": 21.432532759866632
+    },
+    {
+      "seed": 5000,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_08",
+      "tracking_rmse_K": 8.136461343087102,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.052083333333333336,
+      "max_deviation_K": 21.432532759866632
+    },
+    {
+      "seed": 5000,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_09",
+      "tracking_rmse_K": 7.93714079388841,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.05,
+      "max_deviation_K": 21.432532759866632
+    },
+    {
+      "seed": 5000,
+      "start_offset_sol": 20,
+      "controller": "threshold",
+      "tracking_rmse_K": 7.4955619491354035,
+      "heat_used_Wm2_sol": 100.0,
+      "within_half_K_fraction": 0.06458333333333334,
+      "max_deviation_K": 21.432532759866632
+    },
+    {
+      "seed": 5000,
+      "start_offset_sol": 40,
+      "controller": "zero",
+      "tracking_rmse_K": 4.8541010887240255,
+      "heat_used_Wm2_sol": 0.0,
+      "within_half_K_fraction": 0.11875,
+      "max_deviation_K": 15.800956990774807
+    },
+    {
+      "seed": 5000,
+      "start_offset_sol": 40,
+      "controller": "constant",
+      "tracking_rmse_K": 5.9693535035501055,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.07083333333333333,
+      "max_deviation_K": 16.26553424347324
+    },
+    {
+      "seed": 5000,
+      "start_offset_sol": 40,
+      "controller": "seasonal",
+      "tracking_rmse_K": 6.45309931669077,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.09583333333333334,
+      "max_deviation_K": 15.800956990774807
+    },
+    {
+      "seed": 5000,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_00",
+      "tracking_rmse_K": 7.9655683083176765,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.11041666666666666,
+      "max_deviation_K": 20.523950976525015
+    },
+    {
+      "seed": 5000,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_01",
+      "tracking_rmse_K": 7.553842507362788,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.10416666666666667,
+      "max_deviation_K": 18.35210081510155
+    },
+    {
+      "seed": 5000,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_02",
+      "tracking_rmse_K": 7.1584314369584305,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.08958333333333333,
+      "max_deviation_K": 16.451105614301895
+    },
+    {
+      "seed": 5000,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_03",
+      "tracking_rmse_K": 6.7870594549097145,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.09166666666666666,
+      "max_deviation_K": 15.800956990774807
+    },
+    {
+      "seed": 5000,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_04",
+      "tracking_rmse_K": 6.45309931669077,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.09583333333333334,
+      "max_deviation_K": 15.800956990774807
+    },
+    {
+      "seed": 5000,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_05",
+      "tracking_rmse_K": 6.16390908718682,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.08541666666666667,
+      "max_deviation_K": 15.800956990774807
+    },
+    {
+      "seed": 5000,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_06",
+      "tracking_rmse_K": 5.898991171853906,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.09375,
+      "max_deviation_K": 15.800956990774807
+    },
+    {
+      "seed": 5000,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_07",
+      "tracking_rmse_K": 5.657771962561047,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.08125,
+      "max_deviation_K": 15.800956990774807
+    },
+    {
+      "seed": 5000,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_08",
+      "tracking_rmse_K": 5.452500623724826,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.06458333333333334,
+      "max_deviation_K": 15.800956990774807
+    },
+    {
+      "seed": 5000,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_09",
+      "tracking_rmse_K": 5.319821876429794,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.06458333333333334,
+      "max_deviation_K": 15.800956990774807
+    },
+    {
+      "seed": 5000,
+      "start_offset_sol": 40,
+      "controller": "threshold",
+      "tracking_rmse_K": 5.1005043751669366,
+      "heat_used_Wm2_sol": 200.0,
+      "within_half_K_fraction": 0.07916666666666666,
+      "max_deviation_K": 15.800956990774807
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 20,
+      "controller": "zero",
+      "tracking_rmse_K": 7.300933603805022,
+      "heat_used_Wm2_sol": 0.0,
+      "within_half_K_fraction": 0.10833333333333334,
+      "max_deviation_K": 21.43145155256377
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 20,
+      "controller": "constant",
+      "tracking_rmse_K": 8.503005417767474,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.04791666666666667,
+      "max_deviation_K": 21.842222263733817
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 20,
+      "controller": "seasonal",
+      "tracking_rmse_K": 8.890961415836257,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.075,
+      "max_deviation_K": 21.43145155256377
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_00",
+      "tracking_rmse_K": 10.35670084905769,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.10208333333333333,
+      "max_deviation_K": 25.58288242608367
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_01",
+      "tracking_rmse_K": 9.99234732181881,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.1,
+      "max_deviation_K": 22.92998628758997
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_02",
+      "tracking_rmse_K": 9.625826980839177,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.09375,
+      "max_deviation_K": 21.43145155256377
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_03",
+      "tracking_rmse_K": 9.257313712177131,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.08333333333333333,
+      "max_deviation_K": 21.43145155256377
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_04",
+      "tracking_rmse_K": 8.890961415836257,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.075,
+      "max_deviation_K": 21.43145155256377
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_05",
+      "tracking_rmse_K": 8.541156080013636,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.07916666666666666,
+      "max_deviation_K": 21.43145155256377
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_06",
+      "tracking_rmse_K": 8.237123906796315,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.06458333333333334,
+      "max_deviation_K": 21.43145155256377
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_07",
+      "tracking_rmse_K": 7.996269858629702,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.0625,
+      "max_deviation_K": 21.43145155256377
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_08",
+      "tracking_rmse_K": 7.811944884524314,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.052083333333333336,
+      "max_deviation_K": 21.43145155256377
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_09",
+      "tracking_rmse_K": 7.656766684777396,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.052083333333333336,
+      "max_deviation_K": 21.43145155256377
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 20,
+      "controller": "threshold",
+      "tracking_rmse_K": 7.467476758360451,
+      "heat_used_Wm2_sol": 200.0,
+      "within_half_K_fraction": 0.06458333333333334,
+      "max_deviation_K": 21.43145155256377
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 40,
+      "controller": "zero",
+      "tracking_rmse_K": 4.677986969366191,
+      "heat_used_Wm2_sol": 0.0,
+      "within_half_K_fraction": 0.10833333333333334,
+      "max_deviation_K": 15.785330693104925
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 40,
+      "controller": "constant",
+      "tracking_rmse_K": 5.71239994224226,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.04791666666666667,
+      "max_deviation_K": 16.247697544290787
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 40,
+      "controller": "seasonal",
+      "tracking_rmse_K": 6.036242747777192,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.08333333333333333,
+      "max_deviation_K": 15.785330693104925
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_00",
+      "tracking_rmse_K": 7.825701349968524,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.11041666666666666,
+      "max_deviation_K": 20.48760838721563
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_01",
+      "tracking_rmse_K": 7.367713825558566,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.1,
+      "max_deviation_K": 18.227917331197034
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_02",
+      "tracking_rmse_K": 6.901797705242739,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.09375,
+      "max_deviation_K": 16.132693375555533
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_03",
+      "tracking_rmse_K": 6.44493511704174,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.09791666666666667,
+      "max_deviation_K": 15.785330693104925
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_04",
+      "tracking_rmse_K": 6.036242747777192,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.08333333333333333,
+      "max_deviation_K": 15.785330693104925
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_05",
+      "tracking_rmse_K": 5.703213539060143,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.08333333333333333,
+      "max_deviation_K": 15.785330693104925
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_06",
+      "tracking_rmse_K": 5.442132425835004,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.075,
+      "max_deviation_K": 15.785330693104925
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_07",
+      "tracking_rmse_K": 5.247535620369348,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.07708333333333334,
+      "max_deviation_K": 15.785330693104925
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_08",
+      "tracking_rmse_K": 5.151716709068364,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.08125,
+      "max_deviation_K": 15.785330693104925
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_09",
+      "tracking_rmse_K": 5.114652336330694,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.09166666666666666,
+      "max_deviation_K": 15.785330693104925
+    },
+    {
+      "seed": 5001,
+      "start_offset_sol": 40,
+      "controller": "threshold",
+      "tracking_rmse_K": 5.050166140127793,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.08125,
+      "max_deviation_K": 15.785330693104925
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 20,
+      "controller": "zero",
+      "tracking_rmse_K": 7.376941260974951,
+      "heat_used_Wm2_sol": 0.0,
+      "within_half_K_fraction": 0.08333333333333333,
+      "max_deviation_K": 21.374114166628544
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 20,
+      "controller": "constant",
+      "tracking_rmse_K": 8.633613547667277,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.06666666666666667,
+      "max_deviation_K": 21.78507380800241
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 20,
+      "controller": "seasonal",
+      "tracking_rmse_K": 9.048889738546707,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.04791666666666667,
+      "max_deviation_K": 21.374114166628544
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_00",
+      "tracking_rmse_K": 10.406771279762253,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.08125,
+      "max_deviation_K": 25.52930948085873
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_01",
+      "tracking_rmse_K": 10.049814025188713,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.07708333333333334,
+      "max_deviation_K": 22.88400900114067
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_02",
+      "tracking_rmse_K": 9.700459453565482,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.07083333333333333,
+      "max_deviation_K": 21.374114166628544
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_03",
+      "tracking_rmse_K": 9.364900844591654,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.06041666666666667,
+      "max_deviation_K": 21.374114166628544
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_04",
+      "tracking_rmse_K": 9.048889738546707,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.04791666666666667,
+      "max_deviation_K": 21.374114166628544
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_05",
+      "tracking_rmse_K": 8.758375362658214,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.05,
+      "max_deviation_K": 21.374114166628544
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_06",
+      "tracking_rmse_K": 8.502954906675802,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.052083333333333336,
+      "max_deviation_K": 21.374114166628544
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_07",
+      "tracking_rmse_K": 8.28598910695142,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.05,
+      "max_deviation_K": 21.374114166628544
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_08",
+      "tracking_rmse_K": 8.09063678192287,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.052083333333333336,
+      "max_deviation_K": 21.374114166628544
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_09",
+      "tracking_rmse_K": 7.891534212123873,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.052083333333333336,
+      "max_deviation_K": 21.374114166628544
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 20,
+      "controller": "threshold",
+      "tracking_rmse_K": 7.457244717560842,
+      "heat_used_Wm2_sol": 100.0,
+      "within_half_K_fraction": 0.06666666666666667,
+      "max_deviation_K": 21.374114166628544
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 40,
+      "controller": "zero",
+      "tracking_rmse_K": 4.822365193218779,
+      "heat_used_Wm2_sol": 0.0,
+      "within_half_K_fraction": 0.11666666666666667,
+      "max_deviation_K": 15.741584789008868
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 40,
+      "controller": "constant",
+      "tracking_rmse_K": 5.932048888899495,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.06666666666666667,
+      "max_deviation_K": 16.206254645592594
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 40,
+      "controller": "seasonal",
+      "tracking_rmse_K": 6.414189848664815,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.09375,
+      "max_deviation_K": 15.741584789008868
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_00",
+      "tracking_rmse_K": 7.9334502594680965,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.1125,
+      "max_deviation_K": 20.467956328715474
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_01",
+      "tracking_rmse_K": 7.519463924632674,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.10208333333333333,
+      "max_deviation_K": 18.296345012473694
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_02",
+      "tracking_rmse_K": 7.122050729406914,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.08958333333333333,
+      "max_deviation_K": 16.395749695325748
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_03",
+      "tracking_rmse_K": 6.749114385189378,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.09166666666666666,
+      "max_deviation_K": 15.741584789008868
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_04",
+      "tracking_rmse_K": 6.414189848664815,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.09375,
+      "max_deviation_K": 15.741584789008868
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_05",
+      "tracking_rmse_K": 6.1236858715011815,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.09166666666666666,
+      "max_deviation_K": 15.741584789008868
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_06",
+      "tracking_rmse_K": 5.857014117355887,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.09375,
+      "max_deviation_K": 15.741584789008868
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_07",
+      "tracking_rmse_K": 5.615087687497456,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.08333333333333333,
+      "max_deviation_K": 15.741584789008868
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_08",
+      "tracking_rmse_K": 5.410026243167189,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.06458333333333334,
+      "max_deviation_K": 15.741584789008868
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_09",
+      "tracking_rmse_K": 5.285899731345809,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.06666666666666667,
+      "max_deviation_K": 15.741584789008868
+    },
+    {
+      "seed": 5002,
+      "start_offset_sol": 40,
+      "controller": "threshold",
+      "tracking_rmse_K": 5.066990867533352,
+      "heat_used_Wm2_sol": 200.0,
+      "within_half_K_fraction": 0.08125,
+      "max_deviation_K": 15.741584789008868
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 20,
+      "controller": "zero",
+      "tracking_rmse_K": 7.40787652240806,
+      "heat_used_Wm2_sol": 0.0,
+      "within_half_K_fraction": 0.08125,
+      "max_deviation_K": 21.42241153631946
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 20,
+      "controller": "constant",
+      "tracking_rmse_K": 8.667614928161983,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.07083333333333333,
+      "max_deviation_K": 21.833313278429586
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 20,
+      "controller": "seasonal",
+      "tracking_rmse_K": 9.083672895323746,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.04791666666666667,
+      "max_deviation_K": 21.42241153631946
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_00",
+      "tracking_rmse_K": 10.435764475898658,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.07708333333333334,
+      "max_deviation_K": 25.57533859057142
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_01",
+      "tracking_rmse_K": 10.080324979500897,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.07291666666666667,
+      "max_deviation_K": 22.93007368896204
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_02",
+      "tracking_rmse_K": 9.73253351320794,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.06875,
+      "max_deviation_K": 21.42241153631946
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_03",
+      "tracking_rmse_K": 9.398448715880054,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.06041666666666667,
+      "max_deviation_K": 21.42241153631946
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_04",
+      "tracking_rmse_K": 9.083672895323746,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.04791666666666667,
+      "max_deviation_K": 21.42241153631946
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_05",
+      "tracking_rmse_K": 8.794037045093452,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.05,
+      "max_deviation_K": 21.42241153631946
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_06",
+      "tracking_rmse_K": 8.539070341725091,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.05416666666666667,
+      "max_deviation_K": 21.42241153631946
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_07",
+      "tracking_rmse_K": 8.322732755336585,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.04375,
+      "max_deviation_K": 21.42241153631946
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_08",
+      "tracking_rmse_K": 8.128189071288771,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.052083333333333336,
+      "max_deviation_K": 21.42241153631946
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_09",
+      "tracking_rmse_K": 7.928881315211706,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.05,
+      "max_deviation_K": 21.42241153631946
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 20,
+      "controller": "threshold",
+      "tracking_rmse_K": 7.488711844019107,
+      "heat_used_Wm2_sol": 100.0,
+      "within_half_K_fraction": 0.06458333333333334,
+      "max_deviation_K": 21.42241153631946
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 40,
+      "controller": "zero",
+      "tracking_rmse_K": 4.848492290161275,
+      "heat_used_Wm2_sol": 0.0,
+      "within_half_K_fraction": 0.11875,
+      "max_deviation_K": 15.790667574278814
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 40,
+      "controller": "constant",
+      "tracking_rmse_K": 5.962710814197487,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.07083333333333333,
+      "max_deviation_K": 16.25526079486511
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 40,
+      "controller": "seasonal",
+      "tracking_rmse_K": 6.446125437153234,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.09583333333333334,
+      "max_deviation_K": 15.790667574278814
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_00",
+      "tracking_rmse_K": 7.959783285316174,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.11041666666666666,
+      "max_deviation_K": 20.514249698710756
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_01",
+      "tracking_rmse_K": 7.547650728699192,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.10208333333333333,
+      "max_deviation_K": 18.342440581258245
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_02",
+      "tracking_rmse_K": 7.151890661940314,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.08958333333333333,
+      "max_deviation_K": 16.441514643838985
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_03",
+      "tracking_rmse_K": 6.780244597997758,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.09166666666666666,
+      "max_deviation_K": 15.790667574278814
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_04",
+      "tracking_rmse_K": 6.446125437153234,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.09583333333333334,
+      "max_deviation_K": 15.790667574278814
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_05",
+      "tracking_rmse_K": 6.156705682676244,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.08541666666666667,
+      "max_deviation_K": 15.790667574278814
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_06",
+      "tracking_rmse_K": 5.891446149852026,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.09375,
+      "max_deviation_K": 15.790667574278814
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_07",
+      "tracking_rmse_K": 5.650067031733532,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.08125,
+      "max_deviation_K": 15.790667574278814
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_08",
+      "tracking_rmse_K": 5.445025635163573,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.06458333333333334,
+      "max_deviation_K": 15.790667574278814
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_09",
+      "tracking_rmse_K": 5.313874815312081,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.06458333333333334,
+      "max_deviation_K": 15.790667574278814
+    },
+    {
+      "seed": 5003,
+      "start_offset_sol": 40,
+      "controller": "threshold",
+      "tracking_rmse_K": 5.0946137958818305,
+      "heat_used_Wm2_sol": 200.0,
+      "within_half_K_fraction": 0.07916666666666666,
+      "max_deviation_K": 15.790667574278814
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 20,
+      "controller": "zero",
+      "tracking_rmse_K": 7.43383391063799,
+      "heat_used_Wm2_sol": 0.0,
+      "within_half_K_fraction": 0.08333333333333333,
+      "max_deviation_K": 21.46232267277668
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 20,
+      "controller": "constant",
+      "tracking_rmse_K": 8.69617755297682,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.06666666666666667,
+      "max_deviation_K": 21.873178122634613
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 20,
+      "controller": "seasonal",
+      "tracking_rmse_K": 9.112917521096762,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.04583333333333333,
+      "max_deviation_K": 21.46232267277668
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_00",
+      "tracking_rmse_K": 10.460170250484971,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.07916666666666666,
+      "max_deviation_K": 25.613366928259126
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_01",
+      "tracking_rmse_K": 10.106009771383295,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.07708333333333334,
+      "max_deviation_K": 22.96814635833394
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_02",
+      "tracking_rmse_K": 9.759507072931044,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.06666666666666667,
+      "max_deviation_K": 21.46232267277668
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_03",
+      "tracking_rmse_K": 9.426672119317079,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.06041666666666667,
+      "max_deviation_K": 21.46232267277668
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_04",
+      "tracking_rmse_K": 9.112917521096762,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.04583333333333333,
+      "max_deviation_K": 21.46232267277668
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_05",
+      "tracking_rmse_K": 8.824026572969311,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.04791666666666667,
+      "max_deviation_K": 21.46232267277668
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_06",
+      "tracking_rmse_K": 8.569434777019753,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.052083333333333336,
+      "max_deviation_K": 21.46232267277668
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_07",
+      "tracking_rmse_K": 8.353611539963929,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.04375,
+      "max_deviation_K": 21.46232267277668
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_08",
+      "tracking_rmse_K": 8.15982714803265,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.05416666666666667,
+      "max_deviation_K": 21.46232267277668
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 20,
+      "controller": "truth_pulse_09",
+      "tracking_rmse_K": 7.960516771824078,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.052083333333333336,
+      "max_deviation_K": 21.46232267277668
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 20,
+      "controller": "threshold",
+      "tracking_rmse_K": 7.515093381371732,
+      "heat_used_Wm2_sol": 100.0,
+      "within_half_K_fraction": 0.06666666666666667,
+      "max_deviation_K": 21.46232267277668
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 40,
+      "controller": "zero",
+      "tracking_rmse_K": 4.870330424672663,
+      "heat_used_Wm2_sol": 0.0,
+      "within_half_K_fraction": 0.125,
+      "max_deviation_K": 15.831264470520722
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 40,
+      "controller": "constant",
+      "tracking_rmse_K": 5.988398316641946,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.06875,
+      "max_deviation_K": 16.295795715669158
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 40,
+      "controller": "seasonal",
+      "tracking_rmse_K": 6.472939855645346,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.09375,
+      "max_deviation_K": 15.831264470520722
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_00",
+      "tracking_rmse_K": 7.981907599510778,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.10833333333333334,
+      "max_deviation_K": 20.55252787787913
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_01",
+      "tracking_rmse_K": 7.571345185268577,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.10208333333333333,
+      "max_deviation_K": 18.38056829821707
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_02",
+      "tracking_rmse_K": 7.176950571132888,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.0875,
+      "max_deviation_K": 16.479380794872753
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_03",
+      "tracking_rmse_K": 6.806393942610777,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.08958333333333333,
+      "max_deviation_K": 15.831264470520722
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_04",
+      "tracking_rmse_K": 6.472939855645346,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.09375,
+      "max_deviation_K": 15.831264470520722
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_05",
+      "tracking_rmse_K": 6.184408737253508,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.08541666666666667,
+      "max_deviation_K": 15.831264470520722
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_06",
+      "tracking_rmse_K": 5.92043977805267,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.09583333333333334,
+      "max_deviation_K": 15.831264470520722
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_07",
+      "tracking_rmse_K": 5.67975911645353,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.08333333333333333,
+      "max_deviation_K": 15.831264470520722
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_08",
+      "tracking_rmse_K": 5.474225627087636,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.06666666666666667,
+      "max_deviation_K": 15.831264470520722
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 40,
+      "controller": "truth_pulse_09",
+      "tracking_rmse_K": 5.33717809187268,
+      "heat_used_Wm2_sol": 300.0,
+      "within_half_K_fraction": 0.06666666666666667,
+      "max_deviation_K": 15.831264470520722
+    },
+    {
+      "seed": 5004,
+      "start_offset_sol": 40,
+      "controller": "threshold",
+      "tracking_rmse_K": 5.117652630701276,
+      "heat_used_Wm2_sol": 200.0,
+      "within_half_K_fraction": 0.08125,
+      "max_deviation_K": 15.831264470520722
+    }
+  ],
+  "wall_seconds": 71.52553254200029,
+  "cpu_seconds": 62.918106,
+  "allocated_cpu_cores": 1,
+  "gpu_hours": 0,
+  "agent_training_admitted": false,
+  "provenance": {
+    "source_sha256": {
+      "src/physics/reference.py": "0d9ab87fc253565739e383df46433e392cd82306bb4424f4f6ebc8ec4938db76",
+      "src/physics/control.py": "97055e1dc69b10e0c640cd7686dfdfcd82c8387b5f1f5c3d7eb5d53fa8016a97",
+      "src/physics/surface.py": "8b20b54cb618b69da717ae4d6445987f97842c86afa0e79ac6b945d21c0b1f76",
+      "data/specification/pilot/config.yaml": "7a003fc6008b7087367214d1bd519c4ce4d4ff83e65f043c1b5410ddbd7c66e7",
+      "scripts/pilot/control_feasibility.py": "90d04a63baed5dd54e5c9c2244f2a49f96d8b63cac1646bb30b7e82e598a41bf"
+    },
+    "python": "3.12.3 (main, Apr 12 2024, 17:16:04) [Clang 15.0.0 (clang-1500.1.0.2.5)]",
+    "numpy": "2.1.3",
+    "scipy": "1.14.1",
+    "command": "OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python -m scripts.pilot.control_feasibility --later-windows --out docs/pilot/results/control_later_windows.json",
+    "note": "Hashes recorded at completion. A duration-grid validation tolerance was tightened during this run; exact whole-step integration and successful paths are unchanged. The output command label was corrected after the run."
+  }
+}
