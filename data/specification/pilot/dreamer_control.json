@@ -1,0 +1,85 @@
+{
+  "study_id": "mars-dreamer-ctrl-v1",
+  "cpu_hours": 48,
+  "gpu_hours": 12,
+  "local_cpu_core_hours": 0.25,
+  "train_conditions": 12,
+  "development_seeds": [
+    101,
+    102
+  ],
+  "confirmation_seeds": [
+    201,
+    202,
+    203,
+    204,
+    205
+  ],
+  "model_learning_rates": {
+    "base": 4e-05,
+    "fast": 0.0003
+  },
+  "learner": {
+    "obs_dim": 133,
+    "hidden_dim": 64,
+    "belief_dim": 64,
+    "categoricals": 8,
+    "classes": 8,
+    "batch_size": 8,
+    "sequence_length": 8,
+    "warmup_steps": 1000,
+    "imagination_horizon": 3
+  },
+  "model_checkpoints": [
+    500,
+    1000,
+    2000
+  ],
+  "behavior_checkpoints": [
+    100,
+    200,
+    400
+  ],
+  "collect_every_behavior_updates": 20,
+  "horizons": [
+    3,
+    6
+  ],
+  "readiness_response_improvement": 0.1,
+  "readiness_rule": "Both development seeds: South response RMSE at least 10% below better zero/linear baseline; full temperature no worse than persistence; integrated reward RMSE below better zero/linear baseline. Select checkpoint by validation response RMSE only.",
+  "rung24_rule": "Admit once only if both seeds of selected model improve response RMSE by at least 10% from update 1000 to 2000 and remaining cost admits the entire repeated model search. No actor before readiness.",
+  "baseline_candidates": [
+    "no_heat",
+    "constant_1.5",
+    "constant_2.0",
+    "constant_2.25",
+    "constant_2.5",
+    "seasonal",
+    "feedback",
+    "simple_model"
+  ],
+  "baseline_rule": "Lowest validation mean episode RMSE; fixed order resolves ties. Feedback uses observed temperature change from reset only.",
+  "final_conditions": [
+    5200,
+    5219
+  ],
+  "final_improvement": 0.1,
+  "bootstrap_draws": 10000,
+  "bootstrap_seed": 6100,
+  "larger_proposal": {
+    "training_conditions": 96,
+    "model_updates": 10000,
+    "behavior_updates": 2000,
+    "training_seeds": 5,
+    "authorized": false
+  },
+  "local_protocol_deviation": "A disposable local meter fixture ran 12 climate actor timing updates plus recovery checks before the readiness guard was corrected. No Nautilus job, selected checkpoint, confirmation or final data used those weights. Later behavior timing uses synthetic vectors only. Included in the 0.25 CPU-core-hour local allowance.",
+  "local_cost_basis": {
+    "feasibility_cpu_core_hours": 0.14951,
+    "disposable_meter_wall_seconds": 15.352891457994701,
+    "failed_loader_meter_wall_seconds": 10.822065250016749,
+    "meter_allocated_cpu_cores": 2,
+    "reservation_note": "Rounded conservative 0.25 CPU-core-hour local experiment/metering reservation, not exact utilization; software tests are separate.",
+    "corrected_meter_wall_seconds": 15.847695125004975
+  }
+}

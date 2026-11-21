@@ -6,18 +6,20 @@ import pytest
 
 pytest.importorskip("torchrl", minversion="0.14.0")
 
-from benchmarks.dreamer_control.data import generate_dataset, load_dataset  # noqa: E402
+from data.control import generate_dataset, load_dataset  # noqa: E402
 
 
 def test_versioned_grouped_data_and_integrity(tmp_path):
     destination = tmp_path / "tiny"
-    generated = generate_dataset(destination, split="train", condition_seeds=[5000])
+    generated = generate_dataset(destination, split="train", condition_seeds=[5000], allocated_cpu_cores=2)
     manifest, episodes = load_dataset(destination, split="train")
     assert manifest == generated
     assert manifest["data_namespace"] == "control-response-v1"
     assert manifest["condition_seeds"] == [5000]
     assert manifest["sealed_test_conditions"] == [5200, 5219]
     assert manifest["cost"]["wall_seconds"] > 0 and manifest["cost"]["gpu_hours"] == 0
+    assert manifest["cost"]["allocated_cpu_cores"] == 2
+    assert manifest["cost"]["allocated_cpu_core_hours"] == pytest.approx(2*manifest["cost"]["wall_seconds"]/3600)
     assert len(episodes) == 4
     assert episodes[0]["policy"]["rewards"].sum() == -480.
     for episode in episodes:
