@@ -14,6 +14,7 @@ from pathlib import Path
 import numpy as np
 
 from physics.control import HeatingControl
+from physics.surface import insolation
 
 
 def provenance():
@@ -25,6 +26,55 @@ def provenance():
                 python=sys.version, numpy=version('numpy'), scipy=version('scipy'),
                 command='OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python -m '
                         'scripts.pilot.control_feasibility --out docs/pilot/results/control_feasibility.json')
+
+
+def screen_later_windows():
+    """Exploratory onset offsets; keep original storms and accepted v1 intact."""
+    wall, cpu = time.perf_counter(), time.process_time()
+    env = HeatingControl()
+    annual_max = max(np.average(insolation(env.grid.x, d, env.cfg['planet'])[env.band],
+                                weights=env.grid.w[env.band]) for d in range(669))
+    rows = []
+    for seed in range(5000, 5005):
+        env.reset(seed)
+        initial = env.state_dict()
+        for offset in (20, 40):
+            env.load_state_dict(initial)
+            # Keep precisely the original finite disturbance draw for paired windows.
+            env.sim.total_steps += env.sim._steps(offset)
+            env.sim.advance(offset, 0.0, store=False)
+            start = env.sim.t_sol
+            assert all(np.average(insolation(env.grid.x, start+d, env.cfg['planet'])[env.band],
+                                   weights=env.grid.w[env.band]) <= .1*annual_max
+                       for d in range(121))
+            window = env.state_dict()
+            schedules = {'zero': [0.0]*12, 'constant': [2.5]*12,
+                         'seasonal': [0.0]*4 + [10.0]*3 + [0.0]*5}
+            schedules.update({f'truth_pulse_{s:02d}': [10.0 if s <= i < s+3 else 0.0
+                                                       for i in range(12)] for s in range(10)})
+            for name in [*schedules, 'threshold']:
+                env.load_state_dict(window)
+                for i in range(12):
+                    if name == 'threshold':
+                        obs = env.observation()
+                        temperature = np.average(obs['T_s'][env.band], weights=env.grid.w[env.band])
+                        action = 10.0 if temperature < env.target else 0.0
+                    else:
+                        action = schedules[name][i]
+                    env.step(action)
+                assert env.metrics()['heat_used_Wm2_sol'] <= 300
+                rows.append(dict(seed=seed, start_offset_sol=offset, controller=name,
+                                 **env.metrics()))
+    means = {offset: {name: float(np.mean([r['tracking_rmse_K'] for r in rows
+                                          if r['start_offset_sol'] == offset and r['controller'] == name]))
+                      for name in [*schedules, 'threshold']} for offset in (20, 40)}
+    return dict(exploratory=True, accepted_task_changed=False,
+                disturbance_rule='Original onset-screen draw; no redraw beyond original nominal horizon',
+                development_seeds=list(range(5000, 5005)), start_offsets_sol=[20, 40],
+                mean_tracking_rmse_K=means, rows=rows,
+                wall_seconds=time.perf_counter()-wall, cpu_seconds=time.process_time()-cpu,
+                allocated_cpu_cores=1, gpu_hours=0, agent_training_admitted=False,
+                provenance=provenance())
 
 
 def screen():
@@ -75,8 +125,13 @@ def screen():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--out', type=Path, required=True)
+    parser.add_argument('--later-windows', action='store_true')
     args = parser.parse_args()
-    result = screen()
+    result = screen_later_windows() if args.later_windows else screen()
+    if args.later_windows:
+        result['provenance']['command'] = ('OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python -m '
+                                          'scripts.pilot.control_feasibility --later-windows --out '
+                                          'docs/pilot/results/control_later_windows.json')
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(result, indent=2) + '\n')
     print(json.dumps({k: v for k, v in result.items() if k != 'rows'}, indent=2))

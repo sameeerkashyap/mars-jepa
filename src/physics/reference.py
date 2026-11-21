@@ -246,7 +246,7 @@ class TruthSimulation:
 
     def _steps(self, sols):
         steps = sols / self.cfg['time']['dt_sol']
-        if not np.isfinite(steps) or steps < 0 or not np.isclose(steps, round(steps)):
+        if not np.isfinite(steps) or steps < 0 or not np.isclose(steps, round(steps), rtol=0, atol=1e-8):
             raise ValueError('duration must be a nonnegative whole number of substeps')
         return int(round(steps))
 
