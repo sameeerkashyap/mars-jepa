@@ -8,7 +8,7 @@ admit a climate actor experiment or claim forecast or control skill.
 ```python
 from benchmarks.dreamer_control import DreamerLearner, LearnerConfig
 from benchmarks.dreamer_control.climate import ClimateVectorEnv, climate_imagination
-from benchmarks.dreamer_control.data import generate_dataset, load_dataset
+from data.control import generate_dataset, load_dataset
 
 learner = DreamerLearner(LearnerConfig(obs_dim=133),
                          imagination_env_factory=climate_imagination)
@@ -104,7 +104,7 @@ normalizer or model is fitted by generation or loading.
 CLI, after admission:
 
 ```sh
-rtk env PYTHONPATH=src:. OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 /path/to/python -m benchmarks.dreamer_control.data --out new-directory --split train --train-conditions 12
+rtk env PYTHONPATH=src:. OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 /path/to/python -m data.control --out new-directory --split train --train-conditions 12
 ```
 
 ## Checked scope and cost

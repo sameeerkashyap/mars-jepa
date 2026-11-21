@@ -13,7 +13,7 @@ from importlib.metadata import version
 
 import numpy as np
 
-from .climate import ClimateVectorEnv
+from benchmarks.dreamer_control.climate import ClimateVectorEnv
 
 NAMESPACE = "control-response-v1"
 TASK = "south-winter-response-v1"
@@ -22,7 +22,7 @@ SCHEDULES = ("zero", "constant_2p5", "random_pulse", "random_feasible")
 POLICY_KEYS = ("observations", "actions", "requested_actions", "rewards", "terminated", "truncated")
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE_FILES = ("src/physics/reference.py", "src/physics/control.py", "src/physics/surface.py",
-                "benchmarks/dreamer_control/climate.py", "benchmarks/dreamer_control/data.py")
+                "benchmarks/dreamer_control/climate.py", "src/data/control.py")
 TASK_FILES = ("docs/pilot/HEATING_CONTROL_TASK.md", "docs/pilot/HEATING_RESPONSE_TASK.md")
 
 
@@ -62,12 +62,14 @@ def _schedule(seed, index):
     return np.array(actions)
 
 
-def generate_dataset(destination, *, split, condition_seeds=None, train_conditions=12):
+def generate_dataset(destination, *, split, condition_seeds=None, train_conditions=12, allocated_cpu_cores=1):
     """Write four matched schedules per condition, refusing any existing directory.
 
     Default training groups are nested 12/24; explicit subsets permit cost checks.
     All schedules in one condition share the same initial paired truth checkpoint.
     """
+    if type(allocated_cpu_cores) is not int or allocated_cpu_cores < 1:
+        raise ValueError("allocated_cpu_cores must be a positive integer")
     if train_conditions not in (12, 24):
         raise ValueError("train_conditions must be 12 or 24")
     if split not in SPLITS:
@@ -100,7 +102,7 @@ def generate_dataset(destination, *, split, condition_seeds=None, train_conditio
             rows = {key: [] for key in (*POLICY_KEYS[1:], "requested_heat", "applied_heat",
                                         "daily_T_s", "daily_S", "daily_t_sol")}
             for heat in _schedule(seed, index):
-                raw = np.array([heat / 5 - 1], dtype=np.float64)
+                raw = np.array([heat / 5 - 1], dtype=np.float32)
                 observation, reward, terminated, truncated, info = env.step(raw)
                 observations.append(observation)
                 for key, value in dict(actions=info["dynamics_action"].numpy(), requested_actions=raw,
@@ -125,9 +127,9 @@ def generate_dataset(destination, *, split, condition_seeds=None, train_conditio
                                                wall_seconds=time.perf_counter()-episode_wall,
                                                cpu_seconds=time.process_time()-episode_cpu))
     manifest["cost"] = dict(wall_seconds=time.perf_counter()-wall, cpu_seconds=time.process_time()-cpu,
-                             allocated_cpu_cores=1, gpu_hours=0,
+                             allocated_cpu_cores=allocated_cpu_cores, gpu_hours=0,
                              spinup_included=True, matched_schedule_spinup_reused=True)
-    manifest["cost"]["allocated_cpu_core_hours"] = manifest["cost"]["wall_seconds"] / 3600
+    manifest["cost"]["allocated_cpu_core_hours"] = allocated_cpu_cores * manifest["cost"]["wall_seconds"] / 3600
     manifest["cost"]["process_cpu_hours"] = manifest["cost"]["cpu_seconds"] / 3600
     manifest["data_sha256"] = _hash_json(manifest)
     with (destination / "manifest.json").open("x") as file:
@@ -160,7 +162,7 @@ def _validate_episode(data, record, env):
               (heat >= 0).all(), (heat <= 10).all(), heat.sum() * 10 <= 300 + 1e-5,
               np.allclose(data["actions"], heat / 5 - 1),
               np.allclose(obs[1:, 128], heat[:, 0] / 10), obs[0, 128] == 0,
-              np.allclose(data["requested_heat"], 5*(np.clip(data["requested_actions"], -1, 1)+1)),
+              np.allclose(data["requested_heat"], 5*(np.clip(data["requested_actions"].astype(np.float64), -1, 1)+1)),
               (data["rewards"] <= 0).all(),
               np.allclose(obs[1:, :64], (data["daily_T_s"][:, -1] - env.frost) / 10, atol=1e-6),
               np.allclose(obs[1:, 64:128], data["daily_S"][:, -1] / 589, atol=1e-6),
