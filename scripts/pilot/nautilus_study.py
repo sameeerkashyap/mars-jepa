@@ -5,14 +5,17 @@ from __future__ import annotations
 import argparse
 import base64
 import concurrent.futures
+from datetime import datetime
 import fcntl
 import hashlib
 import io
 import json
+import math
 from pathlib import Path
 import statistics
 import subprocess
 import tarfile
+import threading
 import time
 import urllib.request
 
@@ -84,6 +87,7 @@ class Study:
         self.state_dir = state_dir
         self.path = state_dir / "state.json"
         self.study_id = study_id
+        self._save_lock = threading.Lock()
         self.spec = yaml.safe_load(CONFIG.read_text())["study"]
         if self.spec["variants"] != list(VARIANTS) or self.spec["seeds"] != [0, 1, 2]:
             raise ValueError("This runner implements the fixed four-variant, three-seed study")
@@ -94,9 +98,58 @@ class Study:
         self.state_dir.mkdir(parents=True, exist_ok=True)
 
     def save(self):
-        tmp = self.path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(self.state, indent=2))
-        tmp.replace(self.path)
+        with self._save_lock:
+            tmp = self.path.with_suffix(".tmp")
+            tmp.write_text(json.dumps(self.state, indent=2))
+            tmp.replace(self.path)
+
+    def record_charge(self, name, seconds, evidence):
+        if not math.isfinite(seconds) or seconds < 0 or not evidence:
+            raise ValueError("Nonnegative charge and allocation evidence required")
+        job = self.state["jobs"][name]
+        if "charged_seconds" in job and job["charged_seconds"] != seconds:
+            job.setdefault("accounting_corrections", []).append({
+                "charged_seconds": job["charged_seconds"],
+                "startup_seconds": job.get("startup_seconds"),
+                "allocation_evidence": job.get("allocation_evidence"),
+                "corrected_at": time.time(), "reason": "Replace monitor delay with allocation evidence"})
+        job.update(charged_seconds=seconds, allocation_evidence=evidence)
+        if "record" in job:
+            job["startup_seconds"] = max(0, seconds - job["record"]["status"]["wall_seconds"])
+        self.save()
+
+    def account(self, name, remote):
+        pods = json.loads(kubectl("get", "pods", "-l", f"job-name={name}", "-o", "json").stdout)
+        evidence = []
+        seconds = 0.0
+        for pod in pods["items"]:
+            status = pod.get("status", {})
+            allocated = next((c["lastTransitionTime"] for c in status.get("conditions", [])
+                              if c["type"] == "PodScheduled" and c["status"] == "True"),
+                             status.get("startTime"))
+            containers = status.get("containerStatuses", []) + status.get("initContainerStatuses", [])
+            finishes = [c["state"]["terminated"]["finishedAt"] for c in containers
+                        if "terminated" in c.get("state", {})]
+            if not allocated or not finishes or any("terminated" not in c.get("state", {}) for c in containers):
+                raise ValueError(f"Missing terminal allocation timestamps for {name}")
+            finished = max(finishes)
+            duration = (datetime.fromisoformat(finished.replace("Z", "+00:00")) -
+                        datetime.fromisoformat(allocated.replace("Z", "+00:00"))).total_seconds()
+            if duration < 0:
+                raise ValueError(f"Invalid allocation timestamps for {name}")
+            seconds += duration
+            evidence.append({"pod": pod["metadata"]["name"], "uid": pod["metadata"]["uid"],
+                             "allocated": allocated, "finished": finished})
+        if not evidence:
+            status = remote["status"]
+            start, finish = status.get("startTime"), status.get("completionTime")
+            if not start or not finish:
+                raise ValueError(f"No retained allocation evidence for {name}; preserve current charge")
+            seconds = (datetime.fromisoformat(finish.replace("Z", "+00:00")) -
+                       datetime.fromisoformat(start.replace("Z", "+00:00"))).total_seconds()
+            evidence = [{"job_start": start, "job_completion": finish,
+                         "basis": "conservative Job duration; includes scheduling"}]
+        self.record_charge(name, seconds, evidence)
 
     def remaining(self):
         cpu = gpu = 0.0
@@ -170,14 +223,29 @@ class Study:
     def collect(self, name):
         job = self.state["jobs"][name]
         while True:
-            remote = json.loads(kubectl("get", "job", name, "-o", "json").stdout)
+            try:
+                remote = json.loads(kubectl("get", "job", name, "-o", "json").stdout)
+            except (RuntimeError, subprocess.TimeoutExpired) as error:
+                if "not found" in str(error).lower() or "notfound" in str(error).lower():
+                    raise
+                print(f"Monitor read failed for {name}: {error}; retrying read", flush=True)
+                time.sleep(10)
+                continue
             status = remote.get("status", {})
-            elapsed = time.time() - job["created"]
             terminal = any(c["type"] in ("Complete", "Failed") and c["status"] == "True"
                            for c in status.get("conditions", []))
             if terminal:
-                job["charged_seconds"] = elapsed
+                try:
+                    self.account(name, remote)
+                except (RuntimeError, subprocess.TimeoutExpired) as error:
+                    print(f"Allocation read failed for {name}: {error}; retrying read", flush=True)
+                    time.sleep(10)
+                    continue
                 output = kubectl("logs", f"job/{name}", "--pod-running-timeout=5s", check=False)
+                if getattr(output, "returncode", 0) and status.get("succeeded"):
+                    print(f"Result log read failed for {name}; retrying read", flush=True)
+                    time.sleep(10)
+                    continue
                 logs = output.stdout + getattr(output, "stderr", "")
                 (self.state_dir / f"{name}.log").write_text(logs)
                 records = [line[len("RESULT_JSON="):] for line in logs.splitlines()
@@ -186,11 +254,12 @@ class Study:
                     job["error"] = status
                     raise RuntimeError(f"{name} ended without a result; inspect retained Job and local log")
                 record = json.loads(records[-1])
-                job["startup_seconds"] = max(0.0, elapsed - record["status"]["wall_seconds"])
                 job["record"] = record
+                job["startup_seconds"] = max(0.0, job["charged_seconds"] - record["status"]["wall_seconds"])
+                self.save()
                 if record["status"]["status"] != "ok" or not status.get("succeeded"):
                     raise RuntimeError(f"{name} failed: {record['status']}")
-                print(f"DONE {name}: {elapsed:.0f}s", flush=True)
+                print(f"DONE {name}: {job['charged_seconds']:.0f}s allocated", flush=True)
                 return record
             time.sleep(10)
 
@@ -204,7 +273,7 @@ class Study:
             if mode == "benchmark":
                 continue
             name, _ = self.manifest(task)
-            if self.state["jobs"].get(name, {}).get("record", {}).get("status", {}).get("status") == "ok":
+            if name in self.state["jobs"]:
                 continue
             benchmarks = [r["result"]["projected_epoch_seconds"] for r in records
                           if r["status"]["mode"] == "benchmark" and r["status"]["device"] == device]
@@ -251,7 +320,7 @@ class Study:
                 if old and old.get("record", {}).get("status", {}).get("status") == "ok":
                     results.append(old["record"])
                     continue
-                if old and ("error" in old or "charged_seconds" in old):
+                if old and ("error" in old or "record" in old):
                     raise RuntimeError(f"Previous task {name} failed; inspect before spending more compute")
                 if not old:
                     if reservation <= 0:

@@ -127,6 +127,27 @@ def test_resume_rejects_changed_baseline_snapshot(comparison):
         TorchRLComparison(study.state_dir, study.study_id, baseline, previous)
 
 
+def test_recovers_report_from_durable_results_without_accessing_test_again(comparison, monkeypatch):
+    study, *_ = comparison
+    monkeypatch.setattr(study, "prepare", lambda: None)
+    for seed in SEEDS:
+        name, _ = study.manifest(("train", VARIANT, seed, 20, "cpu"))
+        study.state["jobs"][name] = {
+            "device": "cpu", "reserved_seconds": 0, "charged_seconds": 0,
+            "record": training_record(study.state["comparison_config"], VARIANT, seed)}
+    study.freeze([j["record"] for j in study.state["jobs"].values() if "record" in j])
+    for seed in SEEDS:
+        name, _ = study.manifest(("eval", VARIANT, seed, 20, "cpu"))
+        study.state["jobs"][name] = {"device": "cpu", "reserved_seconds": 0,
+                                      "charged_seconds": 0, "record": evaluation_record(VARIANT, seed)}
+    study.save()
+    resumed = TorchRLComparison(study.state_dir, study.study_id, comparison[1], comparison[2])
+    monkeypatch.setattr(resumed, "prepare", lambda: None)
+    resumed.run()
+    assert resumed.state["phase"] == "complete"
+    assert len(json.loads((study.state_dir / "report.json").read_text())["rows"]) == 15
+
+
 def test_manifests_use_fixed_torchrl_runtime_and_no_time_limits(comparison):
     study, *_ = comparison
     study.freeze([training_record(study.state["comparison_config"], VARIANT, s) for s in SEEDS])
