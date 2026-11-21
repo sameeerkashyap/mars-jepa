@@ -92,7 +92,8 @@ def _draw_storms(cfg, seed, total_sol):
 
 
 def run_truth(cfg, F_a=0.0, seed=0, years=None, mismatch_scale=None,
-              T_init=None, Tg_init=None, m_init=None, store=True):
+              T_init=None, Tg_init=None, m_init=None, store=True, *,
+              start_step=0, storms=None):
     """Integrate the truth model.
 
     Returns a dict with time series (stored every output_every_sol):
@@ -146,7 +147,8 @@ def run_truth(cfg, F_a=0.0, seed=0, years=None, mismatch_scale=None,
     T_g_init = T_g.copy()
     m_init_snap = m.copy()
 
-    storms = _draw_storms(cfg, seed, total_sol)
+    if storms is None:
+        storms = _draw_storms(cfg, seed, total_sol)
     Fa_func = _as_forcing_func(F_a)
 
     # implicit diffusion factor for the surface (constant D, C_s)
@@ -169,7 +171,7 @@ def run_truth(cfg, F_a=0.0, seed=0, years=None, mismatch_scale=None,
     from physics.surface import solar_longitude
 
     for step in range(nsteps + 1):
-        t_sol = step * dt_sol
+        t_sol = (start_step + step) * dt_sol
         S = insolation(grid.x, t_sol, planet)
         tau = dust_tau(grid, t_sol, cfg, storms, mismatch_scale)
         Fa = Fa_func(t_sol)
@@ -227,6 +229,54 @@ def run_truth(cfg, F_a=0.0, seed=0, years=None, mismatch_scale=None,
             out[k] = out[k][:oi]
         result.update(out)
     return result
+
+
+class TruthSimulation:
+    """Persistent truth state with one clock and one disturbance realization."""
+
+    def __init__(self, cfg, seed, total_sol, mismatch_scale=None):
+        from copy import deepcopy
+
+        self.cfg = deepcopy(cfg)
+        self.total_steps = self._steps(total_sol)
+        self.step_index = 0
+        self.storms = _draw_storms(cfg, seed, total_sol)
+        self.mismatch_scale = mismatch_scale
+        self.initial = {}
+
+    def _steps(self, sols):
+        steps = sols / self.cfg['time']['dt_sol']
+        if not np.isfinite(steps) or steps < 0 or not np.isclose(steps, round(steps)):
+            raise ValueError('duration must be a nonnegative whole number of substeps')
+        return int(round(steps))
+
+    @property
+    def t_sol(self):
+        return self.step_index * self.cfg['time']['dt_sol']
+
+    def advance(self, sols, heat=0.0, *, store=True):
+        steps = self._steps(sols)
+        if self.step_index + steps > self.total_steps:
+            raise ValueError('advance exceeds fixed disturbance horizon')
+        result = run_truth(self.cfg, F_a=heat,
+                           years=sols / self.cfg['planet']['year_sols'],
+                           mismatch_scale=self.mismatch_scale, store=store,
+                           start_step=self.step_index, storms=self.storms, **self.initial)
+        self.step_index += steps
+        self.initial = dict(T_init=result['T_s_final'].copy(),
+                            Tg_init=result['T_g_final'].copy(), m_init=result['m_final'].copy())
+        return result
+
+    def state_dict(self):
+        """Private simulator checkpoint; never use this as a policy observation."""
+        from copy import deepcopy
+
+        return deepcopy(self.__dict__)
+
+    def load_state_dict(self, state):
+        from copy import deepcopy
+
+        self.__dict__ = deepcopy(state)
 
 
 if __name__ == "__main__":
