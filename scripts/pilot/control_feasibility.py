@@ -13,8 +13,8 @@ from pathlib import Path
 
 import numpy as np
 
-from physics.control import HeatingControl
-from physics.surface import insolation
+from physics.control import HeatingControl, ResponseHeatingControl
+from physics.surface import frost_point, insolation
 
 
 def provenance():
@@ -77,9 +77,11 @@ def screen_later_windows():
                 provenance=provenance())
 
 
-def screen():
+def screen(response=False):
     wall, cpu = time.perf_counter(), time.process_time()
-    env = HeatingControl()
+    env = ResponseHeatingControl() if response else HeatingControl()
+    co2 = env.cfg['co2']
+    threshold = frost_point(co2['surface_pressure_pa'], co2) + 2
     schedules = {'zero': [0.0]*12, 'constant': [2.5]*12,
                  'seasonal': [0.0]*4 + [10.0]*3 + [0.0]*5}
     for start in range(10):
@@ -102,7 +104,7 @@ def screen():
         for _ in range(12):
             obs = env.observation()
             temperature = np.average(obs['T_s'][env.band], weights=env.grid.w[env.band])
-            action = 10.0 if temperature < env.target else 0.0
+            action = 10.0 if temperature < threshold else 0.0
             actions.append(action)
             env.step(action)
         rows.append(dict(seed=seed, controller='threshold', actions_Wm2=actions,
@@ -111,7 +113,7 @@ def screen():
                                   if r['controller'] == name]))
              for name in [*schedules, 'threshold']}
     best = min((name for name in schedules if name.startswith('truth_pulse')), key=means.get)
-    return dict(task='south-winter-v1', development_seeds=list(range(5000, 5005)),
+    result = dict(task='south-winter-v1', development_seeds=list(range(5000, 5005)),
                 start_sol=env.start_sol, winter_day_in_year=env.start_sol % env.cfg['planet']['year_sols'],
                 target_K=env.target, target_offset_K=2, heat_budget_Wm2_sol=300,
                 mean_tracking_rmse_K=means, privileged_search_best=best,
@@ -120,14 +122,40 @@ def screen():
                 rows=rows, wall_seconds=time.perf_counter()-wall,
                 cpu_seconds=time.process_time()-cpu, allocated_cpu_cores=1,
                 gpu_hours=0, agent_training_admitted=False, provenance=provenance())
+    if response:
+        eligible = ('zero', 'constant', 'seasonal', 'threshold')
+        strongest = min(eligible, key=means.get)
+        result.update(task='south-winter-response-v1', data_namespace='control-response-v1',
+                      target_K=None, response_target_K=2.0,
+                      reference_rule='Matched private no-heat truth; never a policy input',
+                      threshold_rule='Public South-band temperature below fixed frost point +2 K',
+                      strongest_eligible_controller=strongest,
+                      privileged_search_gain_vs_strongest=1-means[best]/means[strongest])
+        result['provenance']['command'] = ('OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python -m '
+                                          'scripts.pilot.control_feasibility --response --out '
+                                          'docs/pilot/results/control_response_feasibility.json')
+        for row in rows:
+            remaining = 300.0
+            applied = []
+            for requested in row['actions_Wm2']:
+                heat = min(requested, remaining/10)
+                applied.append(heat)
+                remaining -= heat*10
+            row['applied_actions_Wm2'] = applied
+            assert 300-remaining == row['heat_used_Wm2_sol']
+        result['allocated_cpu_core_hours'] = result['wall_seconds']/3600
+        result['process_cpu_hours'] = result['cpu_seconds']/3600
+    return result
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--out', type=Path, required=True)
-    parser.add_argument('--later-windows', action='store_true')
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument('--later-windows', action='store_true')
+    mode.add_argument('--response', action='store_true')
     args = parser.parse_args()
-    result = screen_later_windows() if args.later_windows else screen()
+    result = screen_later_windows() if args.later_windows else screen(response=args.response)
     if args.later_windows:
         result['provenance']['command'] = ('OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python -m '
                                           'scripts.pilot.control_feasibility --later-windows --out '
