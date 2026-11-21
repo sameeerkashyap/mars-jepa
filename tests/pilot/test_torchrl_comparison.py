@@ -64,6 +64,16 @@ def test_comparison_matches_pilot_and_baseline_protocol(comparison):
     assert 0 < study.remaining()[0] < 48
 
 
+def test_comparison_rejects_unresolved_previous_charge(comparison, tmp_path):
+    _, baseline, previous = comparison
+    ledger = json.loads(previous.read_text())
+    ledger["jobs"]["pilot"]["accounting_unresolved"] = True
+    previous.write_text(json.dumps(ledger))
+    with pytest.raises(ValueError, match="resolved allocation charges"):
+        TorchRLComparison(tmp_path / "new-state", "mars-new", baseline, previous)
+    assert json.loads(previous.read_text()) == ledger
+
+
 def test_no_test_job_before_all_three_training_seeds_finish(comparison, monkeypatch):
     study, *_ = comparison
     calls = []

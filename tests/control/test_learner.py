@@ -40,6 +40,12 @@ def episode(offset=0):
     )
 
 
+def test_replay_configuration_requires_at_least_two_records():
+    with pytest.raises(ValueError, match="sequence_length must be at least two"):
+        LearnerConfig(obs_dim=3, sequence_length=1)
+    assert LearnerConfig(obs_dim=3, sequence_length=2).sequence_length == 2
+
+
 def test_vector_episode_replay_update_and_recovery(tmp_path):
     torch.set_num_threads(1)
     torch.manual_seed(7)

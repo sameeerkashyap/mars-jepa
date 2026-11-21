@@ -120,35 +120,58 @@ class Study:
 
     def account(self, name, remote):
         pods = json.loads(kubectl("get", "pods", "-l", f"job-name={name}", "-o", "json").stdout)
+        job = self.state["jobs"][name]
+        job["terminal_evidence"] = {"job": remote, "pods": pods}
+        self.save()
+        job_status = remote.get("status", {})
+        job_finish = job_status.get("completionTime") or max((
+            c.get("lastTransitionTime", "") for c in job_status.get("conditions", [])
+            if c["type"] in ("Complete", "Failed") and c["status"] == "True"), default="")
         evidence = []
         seconds = 0.0
+        unresolved = False
         for pod in pods["items"]:
             status = pod.get("status", {})
             allocated = next((c["lastTransitionTime"] for c in status.get("conditions", [])
                               if c["type"] == "PodScheduled" and c["status"] == "True"),
                              status.get("startTime"))
             containers = status.get("containerStatuses", []) + status.get("initContainerStatuses", [])
-            finishes = [c["state"]["terminated"]["finishedAt"] for c in containers
-                        if "terminated" in c.get("state", {})]
-            if not allocated or not finishes or any("terminated" not in c.get("state", {}) for c in containers):
-                raise ValueError(f"Missing terminal allocation timestamps for {name}")
-            finished = max(finishes)
+            finishes = [c.get("state", {}).get("terminated", {}).get("finishedAt") for c in containers]
+            complete = bool(finishes) and all(finishes)
+            finished = max(finishes) if complete else job_finish
+            allocated = allocated or job_status.get("startTime")
+            if not allocated or not finished:
+                unresolved = True
+                evidence.append({"pod": pod["metadata"]["name"],
+                                 "allocated": allocated, "finished": finished,
+                                 "basis": "unresolved timestamps; retain reservation and elapsed charge"})
+                continue
             duration = (datetime.fromisoformat(finished.replace("Z", "+00:00")) -
                         datetime.fromisoformat(allocated.replace("Z", "+00:00"))).total_seconds()
             if duration < 0:
                 raise ValueError(f"Invalid allocation timestamps for {name}")
             seconds += duration
             evidence.append({"pod": pod["metadata"]["name"], "uid": pod["metadata"]["uid"],
-                             "allocated": allocated, "finished": finished})
+                             "allocated": allocated, "finished": finished,
+                             "basis": "container finish timestamps" if complete else
+                             "conservative Pod allocation through terminal Job condition"})
         if not evidence:
-            status = remote["status"]
-            start, finish = status.get("startTime"), status.get("completionTime")
+            start, finish = job_status.get("startTime"), job_finish
             if not start or not finish:
-                raise ValueError(f"No retained allocation evidence for {name}; preserve current charge")
-            seconds = (datetime.fromisoformat(finish.replace("Z", "+00:00")) -
-                       datetime.fromisoformat(start.replace("Z", "+00:00"))).total_seconds()
-            evidence = [{"job_start": start, "job_completion": finish,
-                         "basis": "conservative Job duration; includes scheduling"}]
+                unresolved = True
+                evidence = [{"basis": "unresolved timestamps; retain reservation and elapsed charge"}]
+            else:
+                seconds = (datetime.fromisoformat(finish.replace("Z", "+00:00")) -
+                           datetime.fromisoformat(start.replace("Z", "+00:00"))).total_seconds()
+                evidence = [{"job_start": start, "job_completion": finish,
+                             "basis": "conservative Job duration; includes scheduling"}]
+        if unresolved:
+            job.update(accounting_unresolved=True, allocation_evidence=evidence,
+                       allocation_seconds_lower_bound=seconds)
+            self.save()
+            return
+        job.pop("accounting_unresolved", None)
+        job.pop("allocation_seconds_lower_bound", None)
         self.record_charge(name, seconds, evidence)
 
     def remaining(self):
@@ -156,6 +179,10 @@ class Study:
         for job in self.state["jobs"].values():
             seconds = job.get("charged_seconds", max(job["reserved_seconds"],
                                                      time.time() - job.get("created", time.time())))
+            if job.get("accounting_unresolved"):
+                seconds = max(seconds, job["reserved_seconds"],
+                              time.time() - job.get("created", time.time()),
+                              job["allocation_seconds_lower_bound"])
             cpu += seconds * 2 / 3600
             if job["device"] == "cuda":
                 gpu += seconds / 3600
@@ -252,7 +279,12 @@ class Study:
                            if line.startswith("RESULT_JSON=")]
                 if not records:
                     job["error"] = status
+                    self.save()
                     raise RuntimeError(f"{name} ended without a result; inspect retained Job and local log")
+                if job.get("accounting_unresolved"):
+                    job["error"] = status
+                    self.save()
+                    raise RuntimeError(f"{name} has unresolved allocation accounting; inspect retained evidence")
                 record = json.loads(records[-1])
                 job["record"] = record
                 job["startup_seconds"] = max(0.0, job["charged_seconds"] - record["status"]["wall_seconds"])
