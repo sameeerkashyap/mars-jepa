@@ -13,7 +13,6 @@ import tarfile
 import time
 
 import numpy as np
-import yaml
 
 from scripts.pilot.nautilus_study import ROOT, Study, kubectl, source_bundle
 from scripts.pilot.small_study import write_json
