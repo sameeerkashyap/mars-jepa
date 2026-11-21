@@ -161,7 +161,7 @@ def test_running_job_is_not_cancelled_when_estimate_is_exceeded(tmp_path, monkey
     study.state["jobs"]["long-job"] = {"device": "cpu", "reserved_seconds": 1,
                                        "created": 0}
     running = {"status": {"active": 1}}
-    finished = {"status": {"succeeded": 1, "conditions": [
+    finished = {"status": {"startTime": "1970-01-01T00:00:00Z", "completionTime": "1970-01-01T00:01:40Z", "succeeded": 1, "conditions": [
         {"type": "Complete", "status": "True"}]}}
     states = iter([running, finished])
     calls = []
@@ -169,6 +169,8 @@ def test_running_job_is_not_cancelled_when_estimate_is_exceeded(tmp_path, monkey
 
     def fake_kubectl(*args, **kwargs):
         calls.append(args)
+        if args[:2] == ("get", "pods"):
+            return SimpleNamespace(stdout='{"items": []}')
         if args[0] == "get":
             return SimpleNamespace(stdout=json.dumps(next(states)))
         assert args[0] == "logs"
@@ -186,10 +188,12 @@ def test_failed_job_without_pod_logs_is_charged_and_recorded(tmp_path, monkeypat
     study = Study(tmp_path, "mars-test")
     study.state["jobs"]["evicted"] = {"device": "cuda", "reserved_seconds": 1,
                                       "created": 0}
-    failed = {"status": {"failed": 1, "conditions": [
+    failed = {"status": {"startTime": "1970-01-01T00:00:00Z", "completionTime": "1970-01-01T00:01:40Z", "failed": 1, "conditions": [
         {"type": "Failed", "status": "True"}]}}
 
     def fake_kubectl(*args, **kwargs):
+        if args[:2] == ("get", "pods"):
+            return SimpleNamespace(stdout='{"items": []}')
         if args[0] == "get":
             return SimpleNamespace(stdout=json.dumps(failed))
         assert args[0] == "logs" and kwargs["check"] is False
@@ -225,3 +229,71 @@ def test_cpu_only_continuation_skips_gpu_and_persists(tmp_path, monkeypatch):
     study.state["device"] = "cuda"
     with pytest.raises(ValueError, match="Cannot switch"):
         study.run(cpu_only=True)
+
+
+def test_delayed_collection_charges_allocation_not_monitor_outage(tmp_path, monkeypatch):
+    study = Study(tmp_path, "mars-test")
+    study.state["jobs"]["late"] = {"created": 0, "device": "cpu", "reserved_seconds": 40000,
+                                     "charged_seconds": 21600, "startup_seconds": 21100}
+    record = {"status": {"status": "ok", "wall_seconds": 500}, "result": {}}
+    remote = {"status": {"succeeded": 1, "conditions": [{"type": "Complete", "status": "True"}]}}
+    pod = {"metadata": {"name": "late-pod", "uid": "pod-id"}, "status": {
+        "startTime": "1970-01-01T00:01:00Z", "containerStatuses": [{"state": {
+            "terminated": {"startedAt": "1970-01-01T00:01:10Z", "finishedAt": "1970-01-01T00:10:00Z"}}}]}}
+    attempts = []
+
+    def cluster(*args, **kwargs):
+        attempts.append(args)
+        if len(attempts) == 1:
+            raise RuntimeError("temporary monitor outage")
+        if args[:2] == ("get", "job"):
+            return SimpleNamespace(stdout=json.dumps(remote))
+        if args[:2] == ("get", "pods"):
+            return SimpleNamespace(stdout=json.dumps({"items": [pod]}))
+        return SimpleNamespace(stdout="RESULT_JSON=" + json.dumps(record))
+
+    monkeypatch.setattr(nautilus_study, "kubectl", cluster)
+    monkeypatch.setattr(nautilus_study.time, "time", lambda: 22000)
+    monkeypatch.setattr(nautilus_study.time, "sleep", lambda _: None)
+    assert study.collect("late") == record
+    job = json.loads(study.path.read_text())["jobs"]["late"]
+    assert job["charged_seconds"] == 540 and job["startup_seconds"] == 40
+    assert job["accounting_corrections"][0]["charged_seconds"] == 21600
+    assert job["accounting_corrections"][0]["startup_seconds"] == 21100
+    assert job["allocation_evidence"][0]["uid"] == "pod-id"
+    assert study.remaining() == (47.7, 12)
+
+
+def test_resuming_active_task_does_not_admit_its_cost_twice(tmp_path):
+    study = Study(tmp_path, "mars-test")
+    study.state.update(configmap="source", source_sha256="a" * 64, images={"cpu": "image"})
+    task = ("eval", "gru", 0, 20, "cpu")
+    study.state["decision"] = {}
+    name, _ = study.manifest(task)
+    study.state["jobs"][name] = {"created": nautilus_study.time.time(), "device": "cpu",
+                                    "reserved_seconds": 47 * 1800}
+    study.admit([task])
+
+
+def test_resume_after_charge_before_logs_collects_result_without_relaunch(tmp_path, monkeypatch):
+    study = Study(tmp_path, "mars-test")
+    study.state.update(configmap="source", source_sha256="a" * 64,
+                       images={"cpu": "image"}, decision={})
+    task = ("eval", "gru", 0, 20, "cpu")
+    name, _ = study.manifest(task)
+    study.state["jobs"][name] = {"created": 0, "device": "cpu", "reserved_seconds": 100,
+                                   "charged_seconds": 100}
+    record = {"status": {"status": "ok", "wall_seconds": 90, "mode": "eval"}, "result": {}}
+
+    def cluster(*args, **kwargs):
+        assert args[0] in ("get", "logs"), "completed evaluation was relaunched"
+        if args[:2] == ("get", "job"):
+            return SimpleNamespace(stdout=json.dumps({"status": {
+                "startTime": "1970-01-01T00:00:00Z", "completionTime": "1970-01-01T00:01:40Z",
+                "succeeded": 1, "conditions": [{"type": "Complete", "status": "True"}]}}))
+        if args[:2] == ("get", "pods"):
+            return SimpleNamespace(stdout='{"items": []}')
+        return SimpleNamespace(stdout="RESULT_JSON=" + json.dumps(record))
+
+    monkeypatch.setattr(nautilus_study, "kubectl", cluster)
+    assert study.batch([task]) == [record]
