@@ -97,15 +97,13 @@ The sample itself is not tanh squashed. The real adapter must clip the raw
 sample before mapping it to physical units. Actor REINFORCE scores the raw
 sample. This distinction matters after clipping or budget projection.
 
-## Climate imagination remains an integration gate
+## Climate imagination adapter
 
-The generic learner does **not** prove that learned imagination obeys a climate
-heat budget or stops at action 12. Before a climate pilot, task 7 must supply
-an imagination adapter with exact public remaining heat and time state. It
-must seed this context from the sampled next observations, project the raw
-policy action into applied heat before the learned prior sees it, advance heat
-and time without learning them, and zero rewards and continuation after the
-physical task ends. Actor log-probabilities must still score the raw sample.
+The concrete [response-control adapter](CLIMATE_ADAPTER.md) supplies exact public
+remaining heat and time state for the 133-field response task. It seeds context
+from sampled next observations and projects the raw policy action into applied
+heat before the learned prior sees it. It advances heat and time without learning
+them and zeros reward and continuation after the physical task ends. Actor log-probabilities must still score the raw sample.
 
 The supported hook is
 `DreamerLearner(config, imagination_env_factory=factory)`. The factory receives
@@ -121,9 +119,10 @@ The adapter must reuse the existing trainable world-model parameters. It can
 add deterministic state buffers; those buffers are included in checkpoints.
 Adding a new learned adapter head needs a separate optimizer-ownership change.
 
-The default factory is sufficient for the small vector fixture only. Physical
-projection, deterministic budget/time imagination, and climate performance
-are separate acceptance checks. No climate training was run for this ticket.
+The default factory is sufficient for the small vector fixture only. Use
+`climate_imagination` for response control. Its focused tests check projection,
+exact time/heat state, and recovery. Climate performance remains a separate gate.
+No climate actor training was run for this adapter.
 
 ## Recovery and checked stack
 
