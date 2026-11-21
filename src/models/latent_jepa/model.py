@@ -30,6 +30,7 @@ class JEPAModel(BaseSeqModel):
         e, d, dh = cfg["embed"], cfg["latent"], cfg["decoder_hidden"]
         self.ema_decay = cfg["ema_decay"]
         self.latent_weight = cfg["latent_weight"]
+        self.action_offset = cfg.get("action_offset", 0)
         act_dim = n_cell + 1                      # action = [S, F_a]
         self.enc = nn.Sequential(nn.Linear(n_cell, e), nn.SiLU(),
                                  nn.Linear(e, e))
@@ -63,7 +64,7 @@ class JEPAModel(BaseSeqModel):
         # open-loop latent rollout: actions only, no T_s fed back
         lats = []
         for j in range(H):
-            t = K + j
+            t = K + j + self.action_offset
             s = self.pred(torch.cat([nS[:, t], nFa[:, t:t + 1]], dim=-1), s)
             lats.append(s)
         z = torch.stack(lats, dim=1)              # (B, H, d)

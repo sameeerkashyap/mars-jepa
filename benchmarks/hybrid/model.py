@@ -88,6 +88,7 @@ class EBMOnly(BaseSeqModel):
 
     def __init__(self, stats, n_cell, cfg):
         super().__init__(stats, n_cell)
+        self.action_offset = cfg.get("action_offset", 0)
         full = load_config()
         params = load_ebm_params()
         dt = stored_dt_seconds(full)
@@ -108,7 +109,7 @@ class EBMOnly(BaseSeqModel):
         zero = torch.zeros(B, self.n_cell, device=device)
         preds = []
         for j in range(H):
-            t = K + j
+            t = K + j + self.action_offset
             T, m = bb.step(T, m, S_full[:, t], Fa_full[:, t], zero)
             preds.append(T)
         return torch.stack(preds, dim=1), {}

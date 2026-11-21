@@ -1,0 +1,7 @@
+# Fixed three-seed comparison. Select checkpoints on validation before test access.
+base: torchrl_small.yaml
+train:
+  epochs: 20
+study:
+  seeds: [0, 1, 2]
+  max_epochs: 20

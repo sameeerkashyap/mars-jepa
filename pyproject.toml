@@ -17,6 +17,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+dreamer = [
+    "torch==2.10.0",
+    "torchrl==0.14.0",
+    "tensordict==0.14.2",
+]
 benchmark = [
     "scipy>=1.10,<2",
     "matplotlib>=3.7,<4",

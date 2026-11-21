@@ -31,6 +31,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -61,7 +62,7 @@ def load_model(run_dir, p2, full_cfg, device):
     n_cell = full_cfg["grid"]["n"]
     model = build_model(info["arm"], stats, n_cell, ad["arch"],
                         seed=info.get("seed", 0)).to(device)
-    sd = torch.load(os.path.join(run_dir, "model.pt"), map_location=device)
+    sd = torch.load(os.path.join(run_dir, "model.pt"), map_location=device, weights_only=True)
     model.load_state_dict(sd)
     model.eval()
     return model, info, stats, ad["protocol"]
@@ -296,7 +297,8 @@ def main():
                     help="do not print metric values (write --out only)")
     args = ap.parse_args()
 
-    p2 = load_phase2_config()
+    saved_config = Path(args.run[0]) / "resolved_config.json"
+    p2 = json.loads(saved_config.read_text()) if saved_config.exists() else load_phase2_config()
     full_cfg = load_config()
     device = args.device or pick_device(p2["train"]["device"])
     data_dir = args.data_dir or p2["data"]["data_dir"]

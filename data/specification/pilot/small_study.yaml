@@ -1,0 +1,28 @@
+# Exploratory amendment: isolate JEPA supervision; do not run the legacy sweep.
+base: config_phase2.yaml
+protocol:
+  stride: 120
+train:
+  early_stop:
+    warmup: 5
+    patience: 3
+    min_delta: 0.001
+arch:
+  jepa:
+    action_offset: -1
+  linear:
+    action_offset: -1
+  hybrid:
+    action_offset: -1
+study:
+  fraction: 0.3
+  subset_seed: 0
+  seeds: [0, 1, 2]
+  variants: [gru, jepa_no_latent, jepa, linear]
+  pilot_epochs: 5
+  max_epochs: 20
+  min_rmse_improvement: 0.05
+  cpu_hours: 48
+  gpu_hours: 12
+  benchmark_cpu_hours: 4
+  benchmark_gpu_hours: 1

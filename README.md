@@ -79,6 +79,7 @@ separate two-dimensional diffusion fields.
 | Spatial PI-JEPA | Spatial encoding, latent prediction, and physical-field decoding | [src/models/pi_jepa](src/models/pi_jepa/) |
 | GRU | Recurrent data-only comparison and no-heating-input control | [benchmarks/gru](benchmarks/gru/) |
 | RSSM | Stochastic recurrent state-space comparison | [benchmarks/rssm](benchmarks/rssm/) |
+| TorchRL DreamerV3 components | Small-data categorical state-space forecast | [Training guide](docs/pilot/TORCHRL_SMALL.md) |
 | Transformer | Attention-based sequence comparison | [benchmarks/transformer](benchmarks/transformer/) |
 | Hybrid / physics-only | Simplified heat equations with or without a learned correction | [benchmarks/hybrid](benchmarks/hybrid/) |
 | Linear | Simple autoregressive comparison | [benchmarks/linear](benchmarks/linear/) |

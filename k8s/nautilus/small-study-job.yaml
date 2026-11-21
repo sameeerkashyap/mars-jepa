@@ -1,0 +1,56 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  namespace: razvanlab
+  labels:
+    app: marsworld-small-study
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: marsworld-small-study
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: study
+          command: [/bin/sh, -ec]
+          args:
+            - |
+              mkdir -p /runtime/repo
+              python -c 'import hashlib,os,pathlib,tarfile; p=pathlib.Path("/source/source.tar.gz"); assert hashlib.sha256(p.read_bytes()).hexdigest()==os.environ["MARSWORLD_SOURCE_SHA256"]; tarfile.open(p).extractall("/runtime/repo", filter="data")'
+              cd /runtime/repo
+              if [ "$MARSWORLD_DEVICE" = cpu ]; then
+                python -m pip install --no-cache-dir "torch==${MARSWORLD_TORCH_VERSION:-2.5.1}" --index-url https://download.pytorch.org/whl/cpu
+              fi
+              python -m pip install --no-cache-dir -r k8s/nautilus/requirements.txt
+              if [ -n "${MARSWORLD_EXTRA_REQUIREMENTS:-}" ]; then
+                python -m pip install --no-cache-dir -r "$MARSWORLD_EXTRA_REQUIREMENTS"
+              fi
+              python -m pip freeze > "$MARSWORLD_TASK_DIR/packages.txt"
+              exec python -u -m scripts.pilot.small_study "$MARSWORLD_MODE" \
+                --config "${MARSWORLD_CONFIG:-data/specification/pilot/small_study.yaml}" \
+                --variant "$MARSWORLD_VARIANT" --seed "$MARSWORLD_SEED" \
+                --epochs "$MARSWORLD_EPOCHS" --device "$MARSWORLD_DEVICE" \
+                --data-dir /results/pilot-20261109/data --out "$MARSWORLD_RUN_DIR"
+          env:
+            - {name: PYTHONPATH, value: /runtime/repo/src:/runtime/repo}
+            - {name: PYTHONUNBUFFERED, value: "1"}
+            - {name: OMP_NUM_THREADS, value: "2"}
+            - {name: MKL_NUM_THREADS, value: "2"}
+            - {name: OPENBLAS_NUM_THREADS, value: "2"}
+            - {name: MPLCONFIGDIR, value: /runtime/matplotlib}
+          resources:
+            requests: {cpu: "2", memory: 8Gi, ephemeral-storage: 8Gi}
+            limits: {cpu: "2", memory: 8Gi, ephemeral-storage: 8Gi}
+          volumeMounts:
+            - {name: results, mountPath: /results}
+            - {name: source, mountPath: /source, readOnly: true}
+            - {name: runtime, mountPath: /runtime}
+      volumes:
+        - name: results
+          persistentVolumeClaim: {claimName: marsworld-pilot-sweep}
+        - name: source
+          configMap: {name: SET_BY_LAUNCHER}
+        - name: runtime
+          emptyDir: {sizeLimit: 8Gi}

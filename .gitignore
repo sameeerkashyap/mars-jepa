@@ -5,6 +5,7 @@ __pycache__/
 build/
 dist/
 .venv/
+.venv-torchrl/
 venv/
 env/
 
@@ -35,3 +36,4 @@ site/
 # pytest
 .pytest_cache/
 .ruff_cache/
+.cache/

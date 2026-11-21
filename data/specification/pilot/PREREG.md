@@ -246,6 +246,18 @@ here.
 
 ## 12. Deviations (logged after the original commit)
 
+* **D11 — Small exploratory JEPA study (2026-11-13).** After 177 configurations
+  had completed and the full sweep proved too costly, replace further sweep work
+  with `small_study.yaml` and `k8s/nautilus/SMALL_STUDY.md`. Compare GRU, JEPA
+  with and without latent supervision, linear ARX, and the fixed EBM. Use one
+  fixed 30% subset, stride 120, validation-gated expansion from one to three
+  initialization seeds, best-epoch checkpoints, and a 48 CPU-core-hour / 12
+  GPU-hour admission budget. Running Nautilus jobs have no time limits and are
+  never cancelled because these estimates are exceeded. Align JEPA/linear/EBM actions to the preceding stored interval
+  in the new configuration only. Old test outcomes already exist; this study is
+  exploratory and cannot satisfy H1–H3 or the original ten-seed tests. No new
+  physical inputs, physics-loss grid, or real-Mars accuracy claim is added.
+
 Each entry records what changed, when, and whether any Tier-2 outcome was seen
 before the change. No model had been trained on generated (non-fake) data at
 the time of any entry below; only fake-fixture smoke runs existed.

@@ -7,7 +7,7 @@ from models.sequence import count_params as count_params
 
 
 def build_model(arm, stats, n_cell, arch, seed=0):
-    """Factory.  `arm` in {gru, rssm, transformer, hybrid, linear, ebm_only,
+    """Factory.  `arm` in {gru, rssm, torchrl_dreamer, transformer, hybrid, linear, ebm_only,
     gru_noforce, jepa}."""
     torch.manual_seed(seed)
     if arm == "gru":
@@ -16,6 +16,9 @@ def build_model(arm, stats, n_cell, arch, seed=0):
     if arm == "rssm":
         from benchmarks.rssm.model import RSSMModel
         return RSSMModel(stats, n_cell, arch["rssm"])
+    if arm == "torchrl_dreamer":
+        from benchmarks.torchrl_dreamer.model import TorchRLDreamer
+        return TorchRLDreamer(stats, n_cell, arch["torchrl_dreamer"])
     if arm == "transformer":
         from benchmarks.transformer.model import TransformerModel
         return TransformerModel(stats, n_cell, arch["transformer"])

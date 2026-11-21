@@ -1,5 +1,8 @@
 # MarsWorld sweep on Nautilus
 
+For new work, use the [small JEPA study](SMALL_STUDY.md). The large sweep below
+is retained for provenance and should not be restarted for this study.
+
 This job generates the heating dataset, runs the registered **450 configurations**,
 and writes an analysis report. It uses eight CPU workers, 20 training epochs,
 three data fractions, ten fitting seeds, and both test tiers. The physics weights,

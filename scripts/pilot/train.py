@@ -23,8 +23,13 @@ normalized by a fixed scale (config physics.residual_scale).
 from __future__ import annotations
 
 import argparse
+import copy
+import hashlib
 import json
 import os
+from pathlib import Path
+import random
+import time
 
 import numpy as np
 import torch
@@ -55,15 +60,37 @@ def pick_device(name):
 
 
 def set_seed(seed):
+    random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
 
 
 def load_phase2_config(path=PILOT_SPEC / "config_phase2.yaml"):
+    path = Path(path)
     with open(path) as fh:
         cfg = yaml.safe_load(fh)
+    if "base" in cfg:
+        base = load_phase2_config(path.parent / cfg.pop("base"))
+        _merge_config(base, cfg)
+        cfg = base
     cfg["data"]["data_dir"] = str(REPO_ROOT / cfg["data"]["data_dir"])
     return cfg
+
+
+def _merge_config(base, overrides):
+    for key, value in overrides.items():
+        if isinstance(value, dict) and isinstance(base.get(key), dict):
+            _merge_config(base[key], value)
+        else:
+            base[key] = value
+
+
+def atomic_torch_save(value, path):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    torch.save(value, tmp)
+    os.replace(tmp, path)
 
 
 def _normalized_data_loss(pred_phys, target_phys, stats):
@@ -73,7 +100,8 @@ def _normalized_data_loss(pred_phys, target_phys, stats):
 
 def train_one(arm, physics, fraction, seed, lam, p2, full_cfg, device,
               epochs=None, max_batches=None, verbose=False,
-              calibration_mode=False, record_curve=False):
+              calibration_mode=False, record_curve=False, subset_seed=None,
+              checkpoint_dir=None, resume=False):
     """Train a single configuration.  Returns (model, stats, info)."""
     set_seed(seed)
     K = p2["protocol"]["K"]
@@ -87,7 +115,16 @@ def train_one(arm, physics, fraction, seed, lam, p2, full_cfg, device,
                            calibration_mode=calibration_mode)
     val_all = load_split(dcfg["data_dir"], dcfg["family"], dcfg["val_split"],
                          calibration_mode=calibration_mode)
-    train_sub = subsample_train(train_all, fraction, seed)
+    subset_seed = seed if subset_seed is None else subset_seed
+    train_sub = subsample_train(train_all, fraction, subset_seed)
+    observed_hash = hashlib.sha256()
+    subset_indices = [i for i, traj in enumerate(train_all)
+                      if any(traj is selected for selected in train_sub)]
+    if checkpoint_dir:
+        for traj in train_sub + val_all:
+            for key in sorted(traj):
+                observed_hash.update(key.encode())
+                observed_hash.update(np.ascontiguousarray(traj[key]).tobytes())
     # normalization from the subset this run ACTUALLY trains on (10%/30%/100%)
     stats = compute_norm_stats(train_sub)
 
@@ -96,6 +133,7 @@ def train_one(arm, physics, fraction, seed, lam, p2, full_cfg, device,
     tr_ds = WindowDataset(tr_w, stats, K, H)
     va_ds = WindowDataset(va_w, stats, K, H)
     lat = torch.tensor(tr_w["lat"], device=device)
+    del tr_w, va_w, train_all, train_sub, val_all
 
     gen = torch.Generator().manual_seed(seed)
     bs = p2["train"]["batch_size"]
@@ -119,6 +157,26 @@ def train_one(arm, physics, fraction, seed, lam, p2, full_cfg, device,
     coll_cfg = p2["physics"]["collocation"]
     coll_rng = np.random.default_rng(seed + 10007)
 
+    identity = None
+    checkpoint_path = None
+    if checkpoint_dir:
+        checkpoint_path = Path(checkpoint_dir) / "latest.pt"
+        data_root = Path(dcfg["data_dir"])
+        data_hash = hashlib.sha256((data_root / "manifest.json").read_bytes())
+        if (data_root / "SHA256SUMS").exists():
+            data_hash.update((data_root / "SHA256SUMS").read_bytes())
+        identity = {"arm": arm, "physics": physics, "fraction": fraction,
+                    "seed": seed, "subset_seed": subset_seed, "lambda": lam,
+                    "config": copy.deepcopy(p2), "physics_config": full_cfg,
+                    "data_sha256": data_hash.hexdigest(), "device": device,
+                    "observed_sha256": observed_hash.hexdigest(),
+                    "subset_indices": subset_indices,
+                    "max_batches": max_batches,
+                    "source": os.environ.get("MARSWORLD_SOURCE_SHA256", "local")}
+        identity["config"]["train"].pop("epochs", None)
+        if checkpoint_path.exists() and not resume:
+            raise ValueError("Checkpoint exists; use --resume or a new output directory")
+
     if arm in NO_TRAIN_ARMS:
         info = {"arm": arm, "physics": physics, "fraction": fraction,
                 "seed": seed, "lambda": 0.0, "n_params": n_params,
@@ -131,13 +189,42 @@ def train_one(arm, physics, fraction, seed, lam, p2, full_cfg, device,
                            weight_decay=p2["train"]["weight_decay"])
     n_epochs = epochs if epochs is not None else p2["train"]["epochs"]
     clip = p2["train"]["grad_clip"]
-    val_curve = []                      # per-epoch val loss (record_curve=True)
+    val_curve = []
+    best_loss, best_state, best_epoch = float("inf"), None, 0
+    stop_best, bad_epochs, start_epoch = float("inf"), 0, 0
+    early = p2["train"].get("early_stop", {})
+    stopped = False
+    epoch_seconds = []
+    batch_seconds, validation_seconds = [], []
+    if resume and checkpoint_path and checkpoint_path.exists():
+        # Checkpoints are trusted artifacts produced by this training process.
+        ck = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+        if ck["identity"] != identity:
+            raise ValueError("Checkpoint configuration, source, data, or device mismatch")
+        model.load_state_dict(ck["model"])
+        opt.load_state_dict(ck["optimizer"])
+        start_epoch = ck["epoch"]
+        val_curve, epoch_seconds = ck["val_curve"], ck["epoch_seconds"]
+        best_loss, best_state, best_epoch = ck["best_loss"], ck["best_model"], ck["best_epoch"]
+        stop_best, bad_epochs, stopped = ck["stop_best"], ck["bad_epochs"], ck["stopped"]
+        random.setstate(ck["random"])
+        np.random.set_state(ck["numpy"])
+        torch.set_rng_state(ck["torch"])
+        gen.set_state(ck["loader"])
+        coll_rng.bit_generator.state = ck["collocation"]
+        if device == "cuda":
+            torch.cuda.set_rng_state_all(ck["cuda"])
 
-    for ep in range(n_epochs):
+    completed = start_epoch
+    for ep in range(start_epoch, n_epochs):
+        if stopped:
+            break
+        epoch_start = time.monotonic()
         model.train()
         for bi, (Ts, S, Fa) in enumerate(tr_dl):
             if max_batches is not None and bi >= max_batches:
                 break
+            batch_start = time.monotonic()
             Ts, S, Fa = Ts.to(device), S.to(device), Fa.to(device)
             Ts_ctx = Ts[:, :K]
             target = Ts[:, K:]
@@ -155,25 +242,70 @@ def train_one(arm, physics, fraction, seed, lam, p2, full_cfg, device,
                     loss = loss + lam * _collocation_loss(
                         model, Ts_ctx, S, K, H, res, coll_cfg, coll_rng,
                         lat, device)
+            if not torch.isfinite(loss):
+                raise RuntimeError("Non-finite training loss")
             opt.zero_grad()
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
             opt.step()
             if hasattr(model, "ema_update"):
                 model.ema_update()
-        if verbose or record_curve:
+            if max_batches is not None and device == "cuda":
+                torch.cuda.synchronize()
+            batch_seconds.append(time.monotonic() - batch_start)
+            if verbose and (bi + 1) % 10 == 0:
+                print(f"epoch={ep + 1} batch={bi + 1}/{len(tr_dl)} loss={loss.item():.6g}",
+                      flush=True)
+        if verbose or record_curve or checkpoint_dir:
+            val_start = time.monotonic()
             vl = _eval_val(model, va_dl, stats, K, lat, device)
+            validation_seconds.append(time.monotonic() - val_start)
+            if not np.isfinite(vl):
+                raise RuntimeError("Non-finite validation loss")
             val_curve.append(vl)
             if verbose:
-                print(f"  ep {ep}: val_loss={vl:.4f}")
+                print(f"epoch={ep + 1} val_loss={vl:.6g} "
+                      f"val_rmse_K={np.sqrt(vl) * stats['T_s_std']:.6g}", flush=True)
+            if vl < best_loss:
+                best_loss, best_epoch = vl, ep + 1
+                best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+            if vl < stop_best * (1 - early.get("min_delta", 0.001)):
+                stop_best, bad_epochs = vl, 0
+            elif ep + 1 > early.get("warmup", 5):
+                bad_epochs += 1
+            stopped = bool(early and bad_epochs >= early["patience"])
+        completed = ep + 1
+        epoch_seconds.append(time.monotonic() - epoch_start)
+        if checkpoint_path:
+            atomic_torch_save({"identity": identity, "model": model.state_dict(),
+                               "optimizer": opt.state_dict(), "epoch": completed,
+                               "val_curve": val_curve, "epoch_seconds": epoch_seconds,
+                               "best_loss": best_loss, "best_model": best_state,
+                               "best_epoch": best_epoch, "stop_best": stop_best,
+                               "bad_epochs": bad_epochs, "stopped": stopped,
+                               "random": random.getstate(), "numpy": np.random.get_state(),
+                               "torch": torch.get_rng_state(), "loader": gen.get_state(),
+                               "collocation": coll_rng.bit_generator.state,
+                               "cuda": torch.cuda.get_rng_state_all() if device == "cuda" else []},
+                              checkpoint_path)
 
     val_loss = (val_curve[-1] if val_curve
                 else _eval_val(model, va_dl, stats, K, lat, device))
     info = {"arm": arm, "physics": physics, "fraction": fraction, "seed": seed,
             "lambda": float(lam), "n_params": n_params, "val_loss": val_loss,
             "trained": True, "K": K, "H": H}
+    info.update(train_windows=len(tr_ds), val_windows=len(va_ds))
+    if checkpoint_dir:
+        if best_state is None:
+            raise RuntimeError("Budget ended before the first epoch could complete")
+        model.load_state_dict(best_state)
+        info.update(val_loss=best_loss, best_epoch=best_epoch, epochs_completed=completed,
+                    subset_seed=subset_seed, early_stopped=stopped,
+                    epoch_seconds=epoch_seconds,
+                    train_windows=len(tr_ds), val_windows=len(va_ds), identity=identity)
     if record_curve:
         info["val_curve"] = [float(v) for v in val_curve]
+        info.update(batch_seconds=batch_seconds, validation_seconds=validation_seconds)
     return model, stats, info
 
 
@@ -193,17 +325,21 @@ def _eval_val(model, va_dl, stats, K, lat, device):
     model.eval()
     tot, n = 0.0, 0
     with torch.no_grad():
-        for Ts, S, Fa in va_dl:
+        for bi, (Ts, S, Fa) in enumerate(va_dl):
             Ts, S, Fa = Ts.to(device), S.to(device), Fa.to(device)
             pred, _ = model.rollout(Ts[:, :K], S, Fa, lat)
             tot += _normalized_data_loss(pred, Ts[:, K:], stats).item() * Ts.shape[0]
             n += Ts.shape[0]
+            if (bi + 1) % 10 == 0:
+                print(f"validation batch={bi + 1}/{len(va_dl)}", flush=True)
     return tot / max(n, 1)
 
 
 def save_run(out, model, stats, info, p2):
     os.makedirs(out, exist_ok=True)
-    torch.save(model.state_dict(), os.path.join(out, "model.pt"))
+    atomic_torch_save(model.state_dict(), os.path.join(out, "model.pt"))
+    with open(os.path.join(out, "resolved_config.json"), "w") as fh:
+        json.dump(p2, fh, indent=2)
     with open(os.path.join(out, "stats.json"), "w") as fh:
         json.dump(stats, fh, indent=2)
     with open(os.path.join(out, "info.json"), "w") as fh:
@@ -227,9 +363,13 @@ def main():
     ap.add_argument("--data-dir", default=None)
     ap.add_argument("--device", default=None)
     ap.add_argument("--verbose", action="store_true")
+    ap.add_argument("--config", default=str(PILOT_SPEC / "config_phase2.yaml"))
+    ap.add_argument("--subset-seed", type=int)
+    ap.add_argument("--resume", action="store_true")
+    ap.add_argument("--checkpoint", action="store_true")
     args = ap.parse_args()
 
-    p2 = load_phase2_config()
+    p2 = load_phase2_config(args.config)
     if args.data_dir:
         p2["data"]["data_dir"] = args.data_dir
     full_cfg = load_config()
@@ -237,11 +377,18 @@ def main():
 
     lam_default = p2["physics"]["lambda_default"]
     lam = args.lam if args.lam is not None else lam_default
+    out = args.out or (f"{PILOT_OUTPUT}/runs/{args.arm}_{args.physics}_"
+                       f"f{int(args.fraction*100)}_s{args.seed}")
+    if args.select_lambda and (args.checkpoint or args.resume):
+        ap.error("Checkpointed runs require one fixed lambda")
 
     def _run(lm):
         return train_one(args.arm, args.physics, args.fraction, args.seed, lm,
                          p2, full_cfg, device, epochs=args.epochs,
-                         max_batches=args.max_batches, verbose=args.verbose)
+                         max_batches=args.max_batches, verbose=args.verbose,
+                         subset_seed=args.subset_seed,
+                         checkpoint_dir=out if args.checkpoint or args.resume else None,
+                         resume=args.resume)
 
     if args.select_lambda and args.physics in ("A", "B") and args.arm in PHYSICS_ARMS:
         best = None
@@ -256,8 +403,6 @@ def main():
         model, stats, info = _run(lam)
 
     print(json.dumps(info, indent=2))
-    out = args.out or (f"{PILOT_OUTPUT}/runs/{args.arm}_{args.physics}_"
-                       f"f{int(args.fraction*100)}_s{args.seed}")
     save_run(out, model, stats, info, p2)
     print(f"saved -> {out}")
 

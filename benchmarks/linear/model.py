@@ -19,6 +19,7 @@ class LinearARX(BaseSeqModel):
     def __init__(self, stats, n_cell, cfg):
         super().__init__(stats, n_cell)
         self.p = cfg["ar_order"]
+        self.action_offset = cfg.get("action_offset", 0)
         # cell-shared AR + exogenous weights; per-cell bias
         self.a = nn.Parameter(torch.zeros(self.p))
         self.bS = nn.Parameter(torch.zeros(1))
@@ -38,7 +39,7 @@ class LinearARX(BaseSeqModel):
                 for i in range(self.p)]
         preds = []
         for j in range(H):
-            t = K + j
+            t = K + j + self.action_offset
             pred = self.bias.unsqueeze(0).expand(B, -1).clone()
             for i in range(self.p):
                 pred = pred + self.a[i] * hist[i]

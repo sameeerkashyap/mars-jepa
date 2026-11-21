@@ -1,0 +1,23 @@
+# Exploratory forecast-only DreamerV3 arm; no policy, reward, or hidden-state inputs.
+base: small_study.yaml
+train:
+  epochs: 5
+arch:
+  torchrl_dreamer:
+    embed: 48
+    hidden: 72
+    belief: 72
+    categoricals: 4
+    classes: 8
+    blocks: 4
+    decoder_hidden: 64
+    unimix: 0.01
+    free_nats: 1.0
+    dynamics_weight: 0.5
+    representation_weight: 0.1
+    reconstruction_weight: 1.0
+study:
+  variants: [torchrl_dreamer]
+  seeds: [0]
+  pilot_epochs: 5
+  max_epochs: 5
