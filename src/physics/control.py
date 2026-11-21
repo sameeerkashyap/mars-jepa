@@ -91,7 +91,7 @@ class HeatingControl:
         applied = project_heat(requested_heat, self.remaining_budget, self.interval_sols)
         result = self.sim.advance(self.interval_sols, applied)
         daily = result['T_s'][1:]
-        error = daily[:, self.band] - self.target
+        error = self._tracking_error(daily)
         daily_error = np.average(error**2, axis=1, weights=self.grid.w[self.band])
         reward = -float(daily_error.sum())
         self.squared_error -= reward
@@ -107,6 +107,9 @@ class HeatingControl:
                     daily_T_s=daily.copy(), daily_S=result['S'][1:].copy(),
                     daily_t_sol=result['t_sol'][1:].copy())
 
+    def _tracking_error(self, daily):
+        return daily[:, self.band] - self.target
+
     def metrics(self):
         if self.sim is None or self.elapsed == 0:
             raise RuntimeError('metrics require at least one transition')
@@ -121,3 +124,24 @@ class HeatingControl:
 
     def load_state_dict(self, state):
         self.__dict__ = deepcopy(state)
+
+
+class ResponseHeatingControl(HeatingControl):
+    """Separate +2 K response task; reference truth is a private reward oracle.
+
+    The policy observes only the heated world. The trusted checkpoint includes
+    both worlds. This synthetic reward does not establish physical deployability.
+    """
+
+    def __init__(self, cfg=None):
+        super().__init__(cfg)
+        self.target = 2.0
+
+    def reset(self, seed):
+        observation = super().reset(seed)
+        self._reference = deepcopy(self.sim)
+        return observation
+
+    def _tracking_error(self, daily):
+        reference = self._reference.advance(self.interval_sols, 0.0)['T_s'][1:]
+        return (daily - reference)[:, self.band] - self.target
