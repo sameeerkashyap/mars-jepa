@@ -43,15 +43,17 @@ def test_final_report_pooled_gate_and_paired_uncertainty():
 
 
 def test_freeze_requires_all_five_matching_hashes(tmp_path):
-    from scripts.pilot.dreamer_control import freeze_confirmation
+    from scripts.pilot.dreamer_control import freeze_confirmation, digest
+    recipe = dict(learning_rate=.00004, horizon=3)
     rows = [dict(seed=s, checkpoint_sha256='a'*64, source_sha256='source',
                  config_sha256='config', data_sha256=['train', 'validation'],
-                 validation_rmse_K=.5, checkpoint=f'confirm-{s}/best.pt') for s in range(201, 206)]
+                 validation_rmse_K=.5, checkpoint=f'confirm-{s}/best.pt', mode='confirm', variant='selected',
+                 recipe_sha256=digest(recipe)) for s in range(201, 206)]
     with pytest.raises(ValueError, match='five'):
-        freeze_confirmation(rows[:-1], 'source', 'config', ['train', 'validation'], 'constant_2.5')
+        freeze_confirmation(rows[:-1], 'source', 'config', ['train', 'validation'], 'constant_2.5', recipe)
     rows[3]['data_sha256'] = ['changed']
     with pytest.raises(ValueError, match='identity'):
-        freeze_confirmation(rows, 'source', 'config', ['train', 'validation'], 'constant_2.5')
+        freeze_confirmation(rows, 'source', 'config', ['train', 'validation'], 'constant_2.5', recipe)
 
 
 def previous_ledger(tmp_path, phase='complete'):
@@ -177,11 +179,13 @@ def test_worker_recovery_and_final_freeze_are_checked_before_any_test_outcome(tm
     for seed in range(201, 206):
         path = base/f'confirm-{seed}.pt'
         identity = dict(source_sha256='fixture', config_sha256=digest(config), data_sha256=hashes,
-                        seed=seed, mode='confirm', variant='selected', rung=12)
+                        seed=seed, mode='confirm', variant='selected', rung=12,
+                        recipe_sha256=digest(dict(learning_rate=.00004, horizon=3)))
         worker.save_recovery(learner, path, {'identity': identity, 'seed_cursor': 3})
         rows.append(dict(**identity, checkpoint=path.name, checkpoint_sha256=worker.file_hash(path)))
     frozen = dict(source_sha256='fixture', config_sha256=digest(config), data_sha256=hashes,
-                  seeds=list(range(201, 206)), baseline='no_heat', runs=rows)
+                  seeds=list(range(201, 206)), baseline='no_heat', runs=rows,
+                  recipe=dict(learning_rate=.00004, horizon=3))
     final = base/'final'
     final.mkdir()
     args.out = final

@@ -26,16 +26,18 @@ def digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, allow_nan=False).encode()).hexdigest()
 
 
-def freeze_confirmation(records, source, config_hash, data_hashes, baseline):
+def freeze_confirmation(records, source, config_hash, data_hashes, baseline, recipe):
     if len(records) != 5 or sorted(r['seed'] for r in records) != FINAL_SEEDS:
         raise ValueError('All five fresh confirmation seeds must finish before test access')
     for row in records:
         if (row['source_sha256'] != source or row['config_sha256'] != config_hash
                 or row['data_sha256'] != data_hashes or len(row['checkpoint_sha256']) != 64
-                or not math.isfinite(row['validation_rmse_K'])):
+                or not math.isfinite(row['validation_rmse_K'])
+                or row['mode'] != 'confirm' or row['variant'] != 'selected'
+                or row['recipe_sha256'] != digest({k: recipe[k] for k in ('learning_rate', 'horizon')})):
             raise ValueError('Confirmation checkpoint identity mismatch')
     return dict(source_sha256=source, config_sha256=config_hash, data_sha256=data_hashes,
-                baseline=baseline, seeds=FINAL_SEEDS, runs=sorted(records, key=lambda r: r['seed']))
+                baseline=baseline, recipe=recipe, seeds=FINAL_SEEDS, runs=sorted(records, key=lambda r: r['seed']))
 
 
 def control_report(records):
@@ -345,7 +347,7 @@ class DreamerControlStudy(Study):
                              outcome='A fresh confirmation model failed readiness. No held-out access or resampling admitted.'))
             return
         decision = freeze_confirmation(confirmed, self.state['source_sha256'], self.state['config_sha256'],
-                                       self.state['data_sha256'], self.state['baseline'])
+                                       self.state['data_sha256'], self.state['baseline'], self.state['recipe'])
         if 'decision' in self.state and self.state['decision'] != decision:
             raise ValueError('Frozen decision changed')
         self.state['decision'] = decision

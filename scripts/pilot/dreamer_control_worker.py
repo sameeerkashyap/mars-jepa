@@ -164,7 +164,8 @@ def train_stage(args, config):
     rate = config['model_learning_rates'][args.variant] if args.mode == 'model' else selected['learning_rate']
     horizon = 3 if args.mode == 'model' else int(args.variant[1:]) if args.mode == 'actor' else selected['horizon']
     identity = dict(source_sha256=args.source, config_sha256=digest(config), data_sha256=hashes,
-                    seed=args.seed, mode=args.mode, variant=args.variant, rung=args.rung)
+                    seed=args.seed, mode=args.mode, variant=args.variant, rung=args.rung,
+                    recipe_sha256=digest(dict(learning_rate=rate, horizon=horizon)))
     path = args.out/'resume.pt'
     if path.exists():
         learner, driver = recover(path, identity)
@@ -293,11 +294,13 @@ def final_evaluation(args, config):
         raise ValueError('Frozen dataset changed')
     learners = []
     for row in frozen['runs']:
+        if row['recipe_sha256'] != digest({k: frozen['recipe'][k] for k in ('learning_rate', 'horizon')}):
+            raise ValueError('Frozen selected recipe changed')
         path = args.base/row['checkpoint']
         if file_hash(path) != row['checkpoint_sha256']:
             raise ValueError('Frozen checkpoint changed')
         learner, _ = recover(path, {k: row[k] for k in (
-            'source_sha256', 'config_sha256', 'data_sha256', 'seed', 'mode', 'variant', 'rung')})
+            'source_sha256', 'config_sha256', 'data_sha256', 'seed', 'mode', 'variant', 'rung', 'recipe_sha256')})
         learners.append((row['seed'], learner))
     # A failed or interrupted held-out workload must never silently resample.
     with (args.out/'EVALUATION_STARTED.json').open('x') as file:
