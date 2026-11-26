@@ -267,12 +267,16 @@ class DreamerLearner:
             }, [length]))
         return torch.stack(chunks)
 
-    def update(self, *, model_only=False):
+    def update(self, *, model_only=False, paired_response_loss=None):
         """Update model and behavior, or only the model for the forecast readiness gate."""
+        if paired_response_loss is not None and not model_only:
+            raise ValueError("paired response supervision applies only to model updates")
         self.optimizer.zero_grad(set_to_none=True)
         sample = self.sample()
         if model_only:
             losses, _ = self.model_loss(sample)
+            if paired_response_loss is not None:
+                losses['loss_paired_response'] = paired_response_loss
         else:
             imagined_env = self.actor_loss.model_based_env
             if hasattr(imagined_env, "prepare_imagination"):

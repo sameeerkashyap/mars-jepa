@@ -19,7 +19,8 @@ from benchmarks.dreamer_control.climate import ClimateVectorEnv, climate_imagina
 from data.control import generate_dataset, load_dataset
 from benchmarks.dreamer_control.learner import versions
 from scripts.pilot.dreamer_control_forecast import forecast_validation, readiness, fit_response_baseline
-from scripts.pilot.dreamer_control import digest, freeze_confirmation
+from scripts.pilot.dreamer_paired_response import matched_training_pairs, paired_response_loss
+from scripts.pilot.dreamer_control import digest, freeze_confirmation, recipe_digest
 from scripts.pilot.small_study import write_json
 
 
@@ -152,20 +153,29 @@ def evaluate(learner, seeds, baseline=None, initial_states=None, trajectory_dir=
     return rows
 
 
-def datasets(base, rung):
+def datasets(base, rung, *, include_train_manifest=False):
     train_manifest, training = load_dataset(base/f'data-{rung}'/'train', split='train')
     val_manifest, validation = load_dataset(base/'data-12'/'validation', split='validation')
-    return [train_manifest['data_sha256'], val_manifest['data_sha256']], training, validation
+    data = ([train_manifest['data_sha256'], val_manifest['data_sha256']], training, validation)
+    return (*data, train_manifest) if include_train_manifest else data
 
 
 def train_stage(args, config):
-    hashes, training, validation = datasets(args.base, args.rung)
+    weight = config.get('paired_response_weight', 0.)
     selected = json.loads(os.environ.get('MARSWORLD_RECIPE', '{}'))
+    if not np.isfinite(weight) or weight < 0:
+        raise ValueError('paired_response_weight must be finite and nonnegative')
+    if args.mode != 'model' and selected.get('paired_response_weight', weight) != weight:
+        raise ValueError('selected recipe and configuration disagree on paired_response_weight')
+    hashes, training, validation, train_manifest = datasets(args.base, args.rung, include_train_manifest=True)
     rate = config['model_learning_rates'][args.variant] if args.mode == 'model' else selected['learning_rate']
     horizon = 3 if args.mode == 'model' else int(args.variant[1:]) if args.mode == 'actor' else selected['horizon']
     identity = dict(source_sha256=args.source, config_sha256=digest(config), data_sha256=hashes,
                     seed=args.seed, mode=args.mode, variant=args.variant, rung=args.rung,
-                    recipe_sha256=digest(dict(learning_rate=rate, horizon=horizon)))
+                    recipe_sha256=recipe_digest(dict(learning_rate=rate, horizon=horizon,
+                                                     paired_response_weight=weight)))
+    if weight:
+        identity['paired_response_weight'] = weight
     path = args.out/'resume.pt'
     if path.exists():
         learner, driver = recover(path, identity)
@@ -178,12 +188,18 @@ def train_stage(args, config):
                       resolved_learner_config=asdict(learner.config))
     env = ClimateVectorEnv()
     band, weights = env.task.band, env.task.grid.w[env.task.band]
+    if weight:
+        pairs = matched_training_pairs(train_manifest, training, band)
+        area = torch.as_tensor(weights, dtype=torch.float32)
     start = time.perf_counter()
     initial_states = {}
     model_checkpoints = config['model_checkpoints']
     # Every confirmation is a fresh initialization, including model and behavior.
-    for _ in range(driver['model_updates'], model_checkpoints[-1]):
-        loss = learner.update(model_only=True)
+    for step in range(driver['model_updates'], model_checkpoints[-1]):
+        auxiliary = None
+        if weight:
+            auxiliary = weight * paired_response_loss(learner, *pairs[step % len(pairs)], band, area)
+        loss = learner.update(model_only=True, paired_response_loss=auxiliary)
         driver['model_updates'] += 1
         if driver['model_updates'] in model_checkpoints:
             metrics = forecast_validation(learner, training, validation, band, weights)
@@ -287,6 +303,7 @@ def meter(args, config):
 def final_evaluation(args, config):
     frozen = json.loads(os.environ['MARSWORLD_FROZEN'])
     if (frozen['source_sha256'] != args.source or frozen['config_sha256'] != digest(config)
+            or frozen['recipe'].get('paired_response_weight', 0.) != config.get('paired_response_weight', 0.)
             or frozen['seeds'] != list(range(201, 206))):
         raise ValueError('Final evaluation freeze identity mismatch')
     freeze_confirmation(frozen['runs'], frozen['source_sha256'], frozen['config_sha256'],
@@ -299,8 +316,11 @@ def final_evaluation(args, config):
         path = args.base/row['checkpoint']
         if file_hash(path) != row['checkpoint_sha256']:
             raise ValueError('Frozen checkpoint changed')
-        learner, _ = recover(path, {k: row[k] for k in (
-            'source_sha256', 'config_sha256', 'data_sha256', 'seed', 'mode', 'variant', 'rung', 'recipe_sha256')})
+        identity = {k: row[k] for k in (
+            'source_sha256', 'config_sha256', 'data_sha256', 'seed', 'mode', 'variant', 'rung', 'recipe_sha256')}
+        if row.get('paired_response_weight'):
+            identity['paired_response_weight'] = row['paired_response_weight']
+        learner, _ = recover(path, identity)
         learners.append((row['seed'], learner))
     # A failed or interrupted held-out workload must never silently resample.
     with (args.out/'EVALUATION_STARTED.json').open('x') as file:
@@ -342,11 +362,17 @@ def main():
     parser.add_argument('--base', type=Path, required=True)
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--variant', default='base')
+    parser.add_argument('--paired-response-weight', type=float,
+                        help='weight for paired response MSE in K² during model pretraining')
     parser.add_argument('--seed', type=int, default=101)
     parser.add_argument('--rung', type=int, choices=(12, 24), default=12)
     parser.add_argument('--source', default=os.environ.get('MARSWORLD_SOURCE_SHA256', 'local-fixture'))
     args = parser.parse_args()
     config = json.loads(args.config.read_text())
+    if args.paired_response_weight is not None:
+        if args.mode in ('meter', 'data'):
+            parser.error('--paired-response-weight applies to model, actor, confirm and final')
+        config['paired_response_weight'] = args.paired_response_weight
     torch.set_num_threads(2)
     args.out.mkdir(parents=True, exist_ok=True)
     if (args.out/'result.json').exists():

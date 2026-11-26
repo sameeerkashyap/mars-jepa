@@ -59,6 +59,13 @@ def test_freeze_requires_all_five_matching_hashes(tmp_path):
         with pytest.raises(ValueError, match='identity'):
             freeze_confirmation(rows, 'source', 'config', ['train', 'validation'], 'constant_2.5', changed)
     assert freeze_confirmation(rows, 'source', 'config', ['train', 'validation'], 'constant_2.5', recipe)['seeds'] == list(range(201, 206))
+    paired_recipe = dict(recipe, paired_response_weight=1.)
+    paired_rows = [dict(row, paired_response_weight=1., recipe_sha256=digest(paired_recipe))
+                   for row in rows]
+    assert freeze_confirmation(paired_rows, 'source', 'config', ['train', 'validation'],
+                               'constant_2.5', paired_recipe)['recipe'] == paired_recipe
+    with pytest.raises(ValueError, match='identity'):
+        freeze_confirmation(paired_rows, 'source', 'config', ['train', 'validation'], 'constant_2.5', recipe)
 
 
 def previous_ledger(tmp_path, phase='complete'):
@@ -170,6 +177,18 @@ def test_worker_recovery_and_final_freeze_are_checked_before_any_test_outcome(tm
     resumed = worker.train_stage(args, config)
     assert first['checkpoint_sha256'] == resumed['checkpoint_sha256']
     assert first['validation'] == resumed['validation']
+    assert 'loss_paired_response' not in first['curves'][0]['loss']
+    paired_config = dict(config, paired_response_weight=1.)
+    args.out = base/'paired'
+    args.out.mkdir()
+    paired = worker.train_stage(args, paired_config)
+    assert paired['paired_response_weight'] == 1.
+    assert paired['curves'][0]['loss']['loss_paired_response'] > 0
+    assert paired['validation'] != first['validation']
+    assert paired['recipe_sha256'] != first['recipe_sha256']
+    assert worker.train_stage(args, paired_config)['checkpoint_sha256'] == paired['checkpoint_sha256']
+    with pytest.raises(ValueError, match='identity changed'):
+        worker.train_stage(args, config)
     actor_out = base/'actor'
     actor_out.mkdir()
     args.out, args.mode, args.variant = actor_out, 'confirm', 'selected'
@@ -183,6 +202,17 @@ def test_worker_recovery_and_final_freeze_are_checked_before_any_test_outcome(tm
         monkeypatch.setenv('MARSWORLD_RECIPE', json.dumps(changed))
         with pytest.raises(ValueError, match='identity changed'):
             worker.train_stage(args, config)
+    args.out = base/'paired-confirm'
+    args.out.mkdir()
+    recipe = dict(learning_rate=.00004, horizon=3, paired_response_weight=1.)
+    monkeypatch.setenv('MARSWORLD_RECIPE', json.dumps(recipe))
+    confirmed = worker.train_stage(args, paired_config)
+    assert confirmed['readiness_failed'] and confirmed['actor_updates'] == 0
+    assert confirmed['recipe_sha256'] == paired['recipe_sha256']
+    assert confirmed['validation'] == paired['validation']
+    assert [c['loss'] for c in confirmed['curves']] == [c['loss'] for c in paired['curves']]
+    with pytest.raises(ValueError, match='recipe'):
+        worker.train_stage(args, config)
     learner = worker.new_learner(config, 201, .00004)
     rows = []
     for seed in range(201, 206):
@@ -219,7 +249,8 @@ def test_worker_recovery_and_final_freeze_are_checked_before_any_test_outcome(tm
         worker.final_evaluation(args, config)
     assert not seen and not (final/'EVALUATION_STARTED.json').exists()
     rows[-1]['checkpoint_sha256'] = original
-    for changed in (dict(learning_rate=.00008, horizon=3), dict(learning_rate=.00004, horizon=6)):
+    for changed in (dict(learning_rate=.00008, horizon=3), dict(learning_rate=.00004, horizon=6),
+                    dict(learning_rate=.00004, horizon=3, paired_response_weight=1.)):
         monkeypatch.setenv('MARSWORLD_FROZEN', json.dumps({**frozen, 'recipe': changed}))
         with pytest.raises(ValueError, match='identity'):
             worker.final_evaluation(args, config)
