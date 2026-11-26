@@ -150,3 +150,49 @@ forecast RNG, data allocation metadata, cumulative cost import, stage ordering,
 per-seed readiness, five-checkpoint verification before test access, exclusive
 final evaluation, report arithmetic and bootstrap pairing. These checks do not
 establish target-cluster performance or learned control success.
+
+## Offline reproduction of the longer validation run
+
+The follow-up jobs `mars-dreamer-long-v1-s101` and `mars-dreamer-long-v1-s102`
+start fresh on the 24-condition training split and the eight original validation
+conditions. They use learning rate 0.0003 and the original eight-record replay
+sequences. Each seed selects the lowest South response RMSE among updates
+500, 1,000, 2,000, 5,000 and 10,000. Both selected checkpoints must pass the
+original response, temperature and reward thresholds described above.
+
+Use the original source archive with SHA-256
+`cd7b517b33fe18b26df2ffa4fd1a972540b6316ea3d180491b6dfff2b324c556`.
+Run these commands from its extracted root in the pilot's CPU environment.
+Set `base` to a writable offline copy of the results volume containing
+`data-24/train` and `data-12/validation`. The model worker reads both splits
+and writes each seed's results in a separate reproduction directory.
+
+```sh
+base=/results/mars-dreamer-ctrl-v1
+source_sha=cd7b517b33fe18b26df2ffa4fd1a972540b6316ea3d180491b6dfff2b324c556
+rtk proxy mkdir -p .cache
+rtk proxy python - <<'PY'
+import json
+from pathlib import Path
+
+config = json.loads(Path("data/specification/pilot/dreamer_control.json").read_text())
+config["model_checkpoints"] = [500, 1000, 2000, 5000, 10000]
+Path(".cache/dreamer-long-v1.json").write_text(json.dumps(config))
+PY
+for seed in 101 102; do
+  rtk proxy env PYTHONPATH=src:. python -u -m scripts.pilot.dreamer_control_worker model \
+    --config .cache/dreamer-long-v1.json --variant fast --seed "$seed" --rung 24 \
+    --source "$source_sha" --base "$base" --out "$base/reproduction/long-s$seed" || exit 1
+done
+```
+
+Read each seed's `result.json`. Its `result.ready` field gives the decision
+for that seed. Its `result.curves` contains every checkpoint's forecast errors,
+and `best.pt` contains the selected weights. Compare each result's
+`config_sha256` and ordered `data_sha256` values with the archived inputs.
+
+| Input | SHA-256 |
+| --- | --- |
+| Resolved configuration | `ad2e246782449eebf9e555075f2f66368cabd80c43a7443084e04dd5dd4b6258` |
+| Training data | `c5899c45029eff57bb7603802bd3e984edead82ade4824c1ed8c449207b65a2a` |
+| Validation data | `78c1a3ebd9d9af9bab6f1220fc35c220c934ee16c5e77547596226df31bbba0d` |
