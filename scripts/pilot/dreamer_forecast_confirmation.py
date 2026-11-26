@@ -74,12 +74,30 @@ def forecast_report(records):
     return result
 
 
-def open_forecast(out, runs, data_hashes, evaluator_hashes):
+def check_validation(learner, scorer, validation_args, expected):
+    observed = scorer.forecast_validation(learner, *validation_args, sols=range(10, 121, 10))
+    if set(observed) != set(expected) or set(observed) != set(scorer.FORECAST_METRICS):
+        raise ValueError('Scorer validation metrics changed')
+    for name, metric in observed.items():
+        actual = metric.get('at_sols', {})
+        saved = expected[name].get('at_sols', {})
+        if not name.endswith('_reward'):
+            if set(actual) != {str(i) for i in range(10, 121, 10)} or set(saved) != {'10', '30', '60', '120'}:
+                raise ValueError('Scorer validation horizons changed')
+        errors = [metric['rmse'], *actual.values()]
+        if (not np.isfinite(errors).all() or min(errors) < 0
+                or not np.isclose(metric['rmse'], expected[name]['rmse'], rtol=1e-5, atol=1e-7)
+                or not all(np.isclose(actual[sol], value, rtol=1e-5, atol=1e-7) for sol, value in saved.items())):
+            raise ValueError('Recovered model did not reproduce selected validation errors')
+
+
+def open_forecast(out, runs, data_hashes, evaluator_hashes, scorer, validation_args):
     if [r['seed'] for r, _ in runs] != list(SEEDS) or data_hashes != DATA:
         raise ValueError('All five fresh seeds and original training and validation data are required')
     frozen = dict(source_sha256=SOURCE, data_sha256=data_hashes, config_sha256=CONFIG_SHA,
                   evaluator_sha256=evaluator_hashes, conditions=list(CONDITIONS),
                   bootstrap_draws=10000, bootstrap_seed=6100, minimum_gain=.1, runs=[])
+    learners = {}
     for row, path in runs:
         identity = dict(source_sha256=SOURCE, data_sha256=DATA, config_sha256=CONFIG_SHA,
                         recipe_sha256=RECIPE_SHA, mode=row['mode'], variant=row['variant'],
@@ -94,10 +112,12 @@ def open_forecast(out, runs, data_hashes, evaluator_hashes):
         sha = worker.file_hash(path)
         if row['mode'] == 'model' and row['checkpoint_sha256'] != sha:
             raise ValueError('Selected checkpoint checksum mismatch')
-        saved = torch.load(path, map_location='cpu', weights_only=False)['pilot']
-        if (saved['identity'] != identity or saved['model_updates'] != best['updates']
+        learner, saved = worker.recover(path, identity)
+        if (learner.updates != best['updates'] or learner.behavior_updates or saved['model_updates'] != best['updates']
                 or saved['behavior_updates'] != 0 or saved['best_model_metrics'] != best['validation']):
             raise ValueError('Checkpoint does not match the validation-selected model')
+        check_validation(learner, scorer, validation_args, best['validation'])
+        learners[row['seed']] = learner
         frozen['runs'].append(dict(identity=identity, checkpoint=str(path), checkpoint_sha256=sha,
                                    updates=best['updates'], validation=best['validation']))
     # Creation spends the single evaluation, including an interruption during generation or scoring.
@@ -105,7 +125,7 @@ def open_forecast(out, runs, data_hashes, evaluator_hashes):
         json.dump(frozen, file, indent=2, allow_nan=False)
         file.flush()
         os.fsync(file.fileno())
-    return frozen
+    return frozen, learners
 
 
 def archived_config(archive):
@@ -147,48 +167,51 @@ def trained_models(base, out, config):
     return runs
 
 
-def run(base, archive, scorer):
+def fresh_conditions(dataset):
     import data.control as data
 
-    config = archived_config(archive)
+    split = 'forecast-confirmation'
+    original = data.SPLITS
+    data.SPLITS = {**original, split: CONDITIONS}
+    try:
+        data.generate_dataset(dataset, split=split, allocated_cpu_cores=2)
+        return data.load_dataset(dataset, split=split)
+    finally:
+        data.SPLITS = original
+
+
+def run(base, archive, scorer):
     out = base / 'forecast-confirmation-v1'
     out.mkdir(exist_ok=True)
     with (out / 'run.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        if (out / 'FROZEN.json').exists():
+        if (any((out / name).exists() for name in ('FROZEN.json', 'conditions', 'report.json', 'report.json.tmp'))
+                or any(out.glob('forecast-s*.json*'))):
             raise FileExistsError('Forecast evaluation already opened. Retain the existing result.')
-        hashes, training, _ = worker.datasets(base, 24)
+        config = archived_config(archive)
+        hashes, training, validation = worker.datasets(base, 24)
         if hashes != DATA:
             raise ValueError('Original train/validation data changed')
         files = (Path(__file__), Path(scorer.__file__))
         evaluator = {path.name: worker.file_hash(path) for path in files}
         runs = trained_models(base, out, config)
-        frozen = open_forecast(out, runs, hashes, evaluator)
+        task = worker.ClimateVectorEnv().task
+        band, weights = task.band, task.grid.w[task.band]
+        frozen, learners = open_forecast(out, runs, hashes, evaluator, scorer, (training, validation, band, weights))
         frozen_hash = worker.file_hash(out / 'FROZEN.json')
         print(f'FROZEN_SHA256={frozen_hash}', flush=True)
-        # Register this split only inside this worker, after spending the one-use evaluation.
-        data.SPLITS['forecast-confirmation'] = CONDITIONS
-        dataset = out / 'conditions'
-        data.generate_dataset(dataset, split='forecast-confirmation', allocated_cpu_cores=2)
-        manifest, episodes = data.load_dataset(dataset, split='forecast-confirmation')
+        manifest, episodes = fresh_conditions(out / 'conditions')
         if tuple(manifest['condition_seeds']) != CONDITIONS:
             raise ValueError('Wrong forecast condition IDs')
         grouped = {c: [] for c in CONDITIONS}
         for row, episode in zip(manifest['episodes'], episodes, strict=True):
             grouped[row['condition_seed']].append(episode)
 
-        env = worker.ClimateVectorEnv()
-        band = env.task.band
         results = {}
-        for selected in frozen['runs']:
-            seed = selected['identity']['seed']
+        for seed, learner in learners.items():
             print(f'Scoring frozen model seed {seed}', flush=True)
-            path = Path(selected['checkpoint'])
-            if worker.file_hash(path) != selected['checkpoint_sha256']:
-                raise ValueError('Frozen checkpoint changed')
-            learner, _ = worker.recover(path, selected['identity'])
             results[seed] = {
-                c: scorer.forecast_validation(learner, training, grouped[c], band, env.task.grid.w[band],
+                c: scorer.forecast_validation(learner, training, grouped[c], band, weights,
                                               sols=range(10, 121, 10)) for c in CONDITIONS
             }
             write_json(out / f'forecast-s{seed}.json', results[seed])

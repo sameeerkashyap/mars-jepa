@@ -47,6 +47,10 @@ def fit_response_baseline(episodes):
 
 def forecast_validation(learner, training, validation, band, weights, *, sols=(10, 30, 60, 120)):
     """Report ten-sol boundary errors and daily-integrated reward prediction."""
+    sols = tuple(sols)
+    if (not sols or any(not isinstance(sol, (int, np.integer)) or sol not in range(10, 121, 10) for sol in sols)
+            or len(set(sols)) != len(sols)):
+        raise ValueError('Forecast horizons must be unique ten-sol boundaries from 10 through 120')
     coefficients = fit_response_baseline(training)
     errors = {name: [] for name in FORECAST_METRICS}
     for episode in validation:

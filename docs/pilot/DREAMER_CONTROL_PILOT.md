@@ -258,6 +258,10 @@ readiness. For each seed it checks all five validation measurements through
 RMSE. It can reuse the model-only checkpoint from a completed matching
 long-recipe controller confirmation run. It verifies the original source archive
 and extracted files, both data hashes, the seed's recipe and the checkpoint.
+The worker loads every learner and uses the twelve-horizon scorer on the original
+validation set. Each seed must reproduce its selected validation errors. It
+keeps the recovered models in memory for scoring. Any previous forecast test
+output blocks access, including partial output whose marker is missing.
 Before generation, it creates `forecast-confirmation-v1/FROZEN.json` once.
 This file records every selected checkpoint checksum and the evaluator source
 checksums. An interruption after this point spends the evaluation. Keep the
@@ -280,7 +284,8 @@ One worker uses two CPU cores and zero GPUs. The two original long runs took
 310.87 and 678.11 seconds. Use 678.12 seconds for each of five seeds. The
 original meter measured 67.492 seconds for one four-schedule condition and
 1.808 seconds to score eight conditions. The projection uses 32 generations
-and five passes over 32 conditions. This gives 3.11 CPU core-hours before
+and five scoring passes over both the eight validation conditions and the
+32 fresh conditions. This gives 3.11 CPU core-hours before
 startup. A 1.5 multiplier and 300 seconds for one startup give an admission
 estimate of **4.83 CPU core-hours**. Use the larger observed startup if the
 ledger requires it. Charge actual allocated time when the worker finishes.
