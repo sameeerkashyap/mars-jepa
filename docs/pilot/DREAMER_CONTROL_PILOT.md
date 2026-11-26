@@ -133,6 +133,47 @@ change its source, data, checkpoints, frozen decision, or running Jobs. A local
 launcher lock prevents duplicate controllers. Reuse the same state path after
 an API interruption. Completed results are reused; failed tasks require review.
 
+## Paired heating objective ablation
+
+The model worker accepts `--paired-response-weight 1` for a validation-only
+comparison. The default weight is zero. Use the same learning rate, seed,
+training split, update count and checkpoint schedule as the control run.
+
+At each update, the learner takes the next heated training trajectory in
+manifest order and its zero-heating trajectory from the same condition.
+Both forecasts start from the same detached reset posterior. Each uses the
+applied actions for its schedule. The forward pass uses categorical modes.
+The backward pass uses softmax gradients through the twelve prior transitions.
+The target is the difference between the two public temperature measurements
+after each action. The extra loss is the mean squared error in K², weighted
+by cell area south of 60°S and averaged over all twelve boundaries.
+It updates the existing dynamics and decoder in the normal optimizer step.
+The total loss adds the weight times this error. The weight and data hashes
+are part of the recovery identity. Include the weight in the selected recipe
+and pass the same flag or JSON configuration to actor, confirmation and
+final workers. Actor and confirmation workers apply the extra loss during
+model pretraining. The original readiness gate controls behavior updates.
+
+For each seed, use a fresh output directory on the results volume. Inside
+the pilot CPU container, set `SEED` to 101 or 102, `CONFIG` to the same
+JSON configuration as the control arm, and use the source archive that
+includes the paired objective. The pilot container verifies that archive
+against `MARSWORLD_SOURCE_SHA256` before starting Python. This example
+matches the fast-learning-rate, 24-condition arm.
+
+```sh
+base=/results/mars-dreamer-ctrl-v1
+python -u -m scripts.pilot.dreamer_control_worker model \
+  --config "$CONFIG" --base "$base" --rung 24 --variant fast --seed "$SEED" \
+  --source "$MARSWORLD_SOURCE_SHA256" --paired-response-weight 1 \
+  --out "$base/paired-response-v1/fast-s$SEED"
+```
+
+Use the standard worker request and limit of two CPU cores, 8 GiB memory,
+8 GiB temporary storage and zero GPUs. Charge actual allocated core-hours.
+Use `result.curves` and the existing `result.ready` thresholds to compare
+each seed at the same checkpoints. The worker runs model training only.
+
 ## Local checks and protocol deviation
 
 A disposable local meter initially ran twelve climate actor timing updates plus recovery checks before the

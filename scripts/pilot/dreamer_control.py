@@ -25,6 +25,13 @@ def digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, allow_nan=False).encode()).hexdigest()
 
 
+def recipe_digest(recipe):
+    settings = {k: recipe[k] for k in ('learning_rate', 'horizon')}
+    if recipe.get('paired_response_weight'):
+        settings['paired_response_weight'] = float(recipe['paired_response_weight'])
+    return digest(settings)
+
+
 def freeze_confirmation(records, source, config_hash, data_hashes, baseline, recipe):
     if len(records) != 5 or sorted(r['seed'] for r in records) != FINAL_SEEDS:
         raise ValueError('All five fresh confirmation seeds must finish before test access')
@@ -33,7 +40,8 @@ def freeze_confirmation(records, source, config_hash, data_hashes, baseline, rec
                 or row['data_sha256'] != data_hashes or len(row['checkpoint_sha256']) != 64
                 or not math.isfinite(row['validation_rmse_K'])
                 or row['mode'] != 'confirm' or row['variant'] != 'selected'
-                or row['recipe_sha256'] != digest({k: recipe[k] for k in ('learning_rate', 'horizon')})):
+                or row.get('paired_response_weight', 0.) != recipe.get('paired_response_weight', 0.)
+                or row['recipe_sha256'] != recipe_digest(recipe)):
             raise ValueError('Confirmation checkpoint identity mismatch')
     return dict(source_sha256=source, config_sha256=config_hash, data_sha256=data_hashes,
                 baseline=baseline, recipe=recipe, seeds=FINAL_SEEDS, runs=sorted(records, key=lambda r: r['seed']))
@@ -324,6 +332,8 @@ class DreamerControlStudy(Study):
                 selected = min(eligible, key=lambda v: rank(eligible[v]))
                 self.state.update(readiness_passed=True, recipe=dict(
                     learning_rate=self.spec['model_learning_rates'][selected], model_variant=selected, rung=rung))
+                if self.spec.get('paired_response_weight'):
+                    self.state['recipe']['paired_response_weight'] = self.spec['paired_response_weight']
                 self.save()
                 break
             best = min(groups, key=lambda v: rank(groups[v]))
