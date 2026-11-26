@@ -11,7 +11,7 @@ import time
 from scripts.pilot.dreamer_control import (
     DreamerControlStudy, FINAL_SEEDS, control_report, digest, freeze_confirmation,
 )
-from scripts.pilot.dreamer_control_forecast import readiness
+from scripts.pilot.dreamer_control_forecast import FORECAST_METRICS, readiness
 from scripts.pilot.nautilus_study import Study, kubectl
 from scripts.pilot.small_study import write_json
 
@@ -20,16 +20,47 @@ SOURCE = "cd7b517b33fe18b26df2ffa4fd1a972540b6316ea3d180491b6dfff2b324c556"
 DATA = ["c5899c45029eff57bb7603802bd3e984edead82ade4824c1ed8c449207b65a2a",
         "78c1a3ebd9d9af9bab6f1220fc35c220c934ee16c5e77547596226df31bbba0d"]
 ORIGINAL_CONFIG = "5cda42890b94a98a98616195a6137434e115dafd71ba67c940d36196fc4ce24a"
+ORIGINAL_LEDGER = "a7f71c9a6666a37e433e6e4bd45b53aa783b682ef86cb70e7fec1b167b2dcb24"
+FINAL_JOB = "mars-dreamer-ctrl-v1-fin-frozen-s0-e24-cpu"
 BASE = "/results/mars-dreamer-ctrl-v1"
 DEV = (101, 102)
+
+
+def nonnegative(value):
+    return type(value) in (int, float) and math.isfinite(value) and value >= 0
+
+
+def check_worker_charge(seconds, status):
+    wall = status["wall_seconds"]
+    # Kubernetes allocation timestamps have one-second resolution.
+    if not nonnegative(wall) or not nonnegative(seconds) or seconds == 0 or seconds + 1 < wall:
+        raise ValueError("Invalid retained job charge or worker runtime")
+
+
+def check_policy_validation(curve):
+    rows = curve["rows"]
+    errors = [row["tracking_rmse_K"] for row in rows]
+    score = curve["validation_rmse_K"]
+    if ([row["condition_seed"] for row in rows] != list(range(5100, 5108))
+            or any(not nonnegative(error) for error in errors)
+            or any(row["violations"] not in (0, 1) for row in rows)
+            or not nonnegative(score) or not math.isclose(score, statistics.mean(errors))):
+        raise ValueError("Invalid policy validation rows or RMSE")
 
 
 class FollowupStudy(DreamerControlStudy):
     def __init__(self, state_dir, previous_state):
         Study.__init__(self, Path(state_dir), "mars-dreamer-long-v1")
-        raw = Path(previous_state).read_bytes()
+        previous_path = Path(previous_state)
+        raw = previous_path.read_bytes()
         previous = json.loads(raw)
         previous_sha = hashlib.sha256(raw).hexdigest()
+        prior_report = previous_path.with_name("report.json")
+        if (previous_sha != ORIGINAL_LEDGER
+                or (prior_report.exists() and json.loads(prior_report.read_text())["final_test_opened"])
+                or previous_path.with_name("FROZEN.json").exists()
+                or previous_path.with_name(FINAL_JOB+".manifest.json").exists()):
+            raise ValueError("Original ledger must match the sealed readiness-failure run")
         if (previous["phase"] != "complete" or previous["study_id"] != "mars-dreamer-ctrl-v1"
                 or previous["rung"] != 24 or previous["data_sha256"] != DATA
                 or previous["source_sha256"] != SOURCE or previous["config_sha256"] != ORIGINAL_CONFIG
@@ -50,6 +81,9 @@ class FollowupStudy(DreamerControlStudy):
                               meter=previous["meter"], baseline=previous["baseline"],
                               source_sha256=SOURCE, data_sha256=DATA, configmap=previous["configmap"])
             self.save()
+        for job in self.state["jobs"].values():
+            if "record" in job and "charged_seconds" in job:
+                check_worker_charge(job["charged_seconds"], job["record"]["status"])
         self.select("long")
 
     def select(self, trial, horizon=3):
@@ -71,6 +105,10 @@ class FollowupStudy(DreamerControlStudy):
         if self.trial == "long" and mode == "model":
             name, tag = f"mars-dreamer-long-v1-s{seed}", f"long-s{seed}"
         out = f"{BASE}/followup-v1/{tag}"
+        if mode == "final":
+            if task != ("final", "frozen", 0, 24, "cpu"):
+                raise ValueError("Final evaluation requires the original one-use task")
+            name, out = FINAL_JOB, f"{BASE}/final-frozen-s0-r24"
         manifest["metadata"]["name"] = name
         worker = manifest["spec"]["template"]["spec"]["containers"][0]
         env = {x["name"]: x["value"] for x in worker["env"]}
@@ -102,9 +140,9 @@ class FollowupStudy(DreamerControlStudy):
             record = retained["record"]
             status = record["status"]
             seconds = retained["cpu_core_hours"]*3600/2
+            check_worker_charge(seconds, status)
             if (retained["job"] != name or status["source_sha256"] != SOURCE
-                    or status["device"] != "cpu" or status["allocated_cpu_cores"] != 2
-                    or not math.isfinite(seconds) or seconds <= 0):
+                    or status["device"] != "cpu" or status["allocated_cpu_cores"] != 2):
                 raise ValueError("Invalid retained job identity or charge")
             job = dict(charged_seconds=seconds, reserved_seconds=0, record=record,
                        startup_seconds=max(0, seconds-status["wall_seconds"]),
@@ -125,13 +163,14 @@ class FollowupStudy(DreamerControlStudy):
         tasks = [(mode, variant, seed, 24, "cpu") for seed in seeds]
         for task in tasks:
             self.adopt(task)
+        recipe = dict(self.recipe, horizon=int(variant[1:])) if mode == "actor" else self.recipe
+        self.state["last_attempt"] = dict(trial=self.trial, **recipe)
         rows = self.stage(tasks, self.trial+"-"+mode+"-"+variant)
         by_seed = {row["seed"]: row for row in rows}
         if (len(by_seed) != len(rows) or not set(by_seed) <= set(seeds)
                 or (set(by_seed) != set(seeds) and not any(r.get("readiness_failed") for r in rows))):
             raise ValueError("Wrong or missing seed identity")
         for seed, row in by_seed.items():
-            recipe = dict(self.recipe, horizon=int(variant[1:])) if mode == "actor" else self.recipe
             identity = dict(mode=mode, variant=variant, seed=seed, rung=24, data_sha256=DATA,
                             source_sha256=SOURCE, config_sha256=digest(self.spec), recipe_sha256=digest(recipe))
             if any(row.get(k) != v for k, v in identity.items()):
@@ -139,10 +178,18 @@ class FollowupStudy(DreamerControlStudy):
             model = [c for c in row["curves"] if c["phase"] == "model"]
             if [c["updates"] for c in model] != self.spec["model_checkpoints"]:
                 raise ValueError("Incomplete model validation curve")
+            for curve in model:
+                if set(curve["validation"]) != set(FORECAST_METRICS):
+                    raise ValueError("Incomplete forecast metrics")
+                for metric in curve["validation"].values():
+                    if not all(nonnegative(error) for error in (metric["rmse"], *metric.get("at_sols", {}).values())):
+                        raise ValueError("Invalid forecast RMSE")
             selected = min(model, key=lambda c: c["validation"]["model_response"]["rmse"])["validation"]
             ready = readiness(selected, self.spec["readiness_response_improvement"])
             if mode == "model":
-                if row["ready"] != ready or row["validation"] != selected:
+                if (row["ready"] != ready or row["validation"] != selected
+                        or not nonnegative(row["validation_rmse_K"])
+                        or not math.isclose(row["validation_rmse_K"], selected["model_response"]["rmse"])):
                     raise ValueError("Model readiness disagrees with selected forecast")
             elif not ready:
                 if (row.get("readiness_failed") is not True or row["actor_updates"] != 0
@@ -153,12 +200,12 @@ class FollowupStudy(DreamerControlStudy):
                 behavior = [c for c in row["curves"] if c["phase"] == "behavior"]
                 if [c["updates"] for c in behavior] != self.spec["behavior_checkpoints"]:
                     raise ValueError("Incomplete policy validation curve")
+                for curve in behavior:
+                    check_policy_validation(curve)
                 best = min(behavior, key=lambda c: c["validation_rmse_K"])
                 observed = row["validation"]
-                if (observed != best["rows"] or [r["condition_seed"] for r in observed] != list(range(5100, 5108))
-                        or not math.isclose(row["validation_rmse_K"], best["validation_rmse_K"])
-                        or not math.isclose(row["validation_rmse_K"],
-                                            statistics.mean(r["tracking_rmse_K"] for r in observed))):
+                if (observed != best["rows"] or not nonnegative(row["validation_rmse_K"])
+                        or not math.isclose(row["validation_rmse_K"], best["validation_rmse_K"])):
                     raise ValueError("Policy validation rows or score changed")
             name, manifest = self.manifest((mode, variant, seed, 24, "cpu"))
             env = manifest["spec"]["template"]["spec"]["containers"][0]["env"]
@@ -190,12 +237,25 @@ class FollowupStudy(DreamerControlStudy):
 
     def outcome(self, reason, *, final=None):
         report = dict(outcome=reason, final_test_opened=final is not None, passed=False,
-                      selected_trial=self.trial, recipe=self.recipe, baseline=self.state["baseline"],
+                      last_attempt=self.state["last_attempt"],
+                      qualified_recipe=self.state.get("qualified_recipe"), baseline=self.state["baseline"],
                       development_screen_K=self.screen, validation_scores=self.state.get("validation_scores", {}),
                       previous_sha256=self.state["previous_sha256"], source_sha256=SOURCE, data_sha256=DATA,
                       config_sha256=digest(self.spec), remaining_cpu_gpu_hours=self.remaining())
         if final is not None:
             report.update(final)
+        if report["passed"]:
+            proposal = self.spec["larger_proposal"]
+            scale = max(proposal["model_updates"]/self.spec["model_checkpoints"][-1],
+                        proposal["behavior_updates"]/self.spec["behavior_checkpoints"][-1])
+            per_seed = self.estimated_seconds(("confirm", "selected", FINAL_SEEDS[0], 24, "cpu"))
+            generation = proposal["training_conditions"]*self.state["meter"]["generation_condition_seconds"]
+            seconds = generation + proposal["training_seeds"]*per_seed*scale
+            startup = max([300.] + [job.get("startup_seconds", 0.) for job in self.state["jobs"].values()])
+            report["larger_proposal"] = dict(**proposal, estimated_cpu_core_hours=seconds*2*1.5/3600,
+                startup_allowance_core_hours=(1+proposal["training_seeds"])*startup*2/3600,
+                basis="Metered generation and selected training time scaled by the larger update ratio, "
+                      "two CPU cores and a 1.5 margin. Startup is separate. Requires approval.")
         write_json(self.state_dir/"report.json", report)
         self.state.update(phase="complete", outcome=reason)
         self.save()

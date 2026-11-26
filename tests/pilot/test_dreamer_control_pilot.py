@@ -40,6 +40,10 @@ def test_final_report_pooled_gate_and_paired_uncertainty():
     assert not control_report(records)['passed']
     with pytest.raises(ValueError, match='five'):
         control_report(records[:-1])
+    for record in records:
+        record['rows'][0]['baseline_rmse_K'] = -1.
+    with pytest.raises(ValueError, match='RMSE'):
+        control_report(records)
 
 
 def test_freeze_requires_all_five_matching_hashes(tmp_path):
@@ -51,6 +55,10 @@ def test_freeze_requires_all_five_matching_hashes(tmp_path):
                  recipe_sha256=digest(recipe)) for s in range(201, 206)]
     with pytest.raises(ValueError, match='five'):
         freeze_confirmation(rows[:-1], 'source', 'config', ['train', 'validation'], 'constant_2.5', recipe)
+    rows[0]['validation_rmse_K'] = -1.
+    with pytest.raises(ValueError, match='identity'):
+        freeze_confirmation(rows, 'source', 'config', ['train', 'validation'], 'constant_2.5', recipe)
+    rows[0]['validation_rmse_K'] = .5
     rows[3]['data_sha256'] = ['changed']
     with pytest.raises(ValueError, match='identity'):
         freeze_confirmation(rows, 'source', 'config', ['train', 'validation'], 'constant_2.5', recipe)

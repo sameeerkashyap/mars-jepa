@@ -4,6 +4,11 @@ import torch
 from tensordict import TensorDict
 
 
+FORECAST_METRICS = ('model_response', 'zero_response', 'linear_response',
+                    'model_temperature', 'persistence_temperature',
+                    'model_reward', 'zero_reward', 'linear_reward')
+
+
 @torch.no_grad()
 def prior_forecast(learner, reset_observation, applied_actions):
     """Condition once on reset, then advance deterministic prior modes only."""
@@ -43,9 +48,7 @@ def fit_response_baseline(episodes):
 def forecast_validation(learner, training, validation, band, weights):
     """Report ten-sol boundary errors and daily-integrated reward prediction."""
     coefficients = fit_response_baseline(training)
-    errors = {name: [] for name in ('model_response', 'zero_response', 'linear_response',
-                                   'model_temperature', 'persistence_temperature',
-                                   'model_reward', 'zero_reward', 'linear_reward')}
+    errors = {name: [] for name in FORECAST_METRICS}
     for episode in validation:
         policy = episode['policy']
         reset, actions = policy['observations'][0], policy['actions']

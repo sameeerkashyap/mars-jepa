@@ -38,7 +38,7 @@ def freeze_confirmation(records, source, config_hash, data_hashes, baseline, rec
     for row in records:
         if (row['source_sha256'] != source or row['config_sha256'] != config_hash
                 or row['data_sha256'] != data_hashes or len(row['checkpoint_sha256']) != 64
-                or not math.isfinite(row['validation_rmse_K'])
+                or not math.isfinite(row['validation_rmse_K']) or row['validation_rmse_K'] < 0
                 or row['mode'] != 'confirm' or row['variant'] != 'selected'
                 or row.get('paired_response_weight', 0.) != recipe.get('paired_response_weight', 0.)
                 or row['recipe_sha256'] != recipe_digest(recipe)):
@@ -56,7 +56,7 @@ def control_report(records):
             raise ValueError('Report requires all twenty matched conditions in order')
     actors = np.array([[r['tracking_rmse_K'] for r in s['rows']] for s in records])
     baselines = np.array([[r['baseline_rmse_K'] for r in s['rows']] for s in records])
-    if not np.isfinite(actors).all() or not np.isfinite(baselines).all() or (actors < 0).any():
+    if not np.isfinite(actors).all() or not np.isfinite(baselines).all() or (actors < 0).any() or (baselines < 0).any():
         raise ValueError('Nonfinite or negative final RMSE')
     if not np.array_equal(baselines, np.broadcast_to(baselines[0], baselines.shape)):
         raise ValueError('Baseline must be matched across every training seed')
