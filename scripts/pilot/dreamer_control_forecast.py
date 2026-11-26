@@ -40,7 +40,7 @@ def fit_response_baseline(episodes):
     return np.stack([np.linalg.lstsq(x[:, cell], y[:, cell], rcond=None)[0] for cell in range(64)])
 
 
-def forecast_validation(learner, training, validation, band, weights):
+def forecast_validation(learner, training, validation, band, weights, *, sols=(10, 30, 60, 120)):
     """Report ten-sol boundary errors and daily-integrated reward prediction."""
     coefficients = fit_response_baseline(training)
     errors = {name: [] for name in ('model_response', 'zero_response', 'linear_response',
@@ -78,7 +78,7 @@ def forecast_validation(learner, training, validation, band, weights):
         result[name] = {'rmse': float(np.sqrt(a.mean()))}
         if a.ndim == 2:
             result[name]['at_sols'] = {str(sol): float(np.sqrt(a[:, sol//10-1].mean()))
-                                      for sol in (10, 30, 60, 120)}
+                                      for sol in sols}
     return result
 
 

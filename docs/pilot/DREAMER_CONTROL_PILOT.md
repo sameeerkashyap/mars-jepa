@@ -244,3 +244,62 @@ and `best.pt` contains the selected weights. Compare each result's
 | Resolved configuration | `ad2e246782449eebf9e555075f2f66368cabd80c43a7443084e04dd5dd4b6258` |
 | Training data | `c5899c45029eff57bb7603802bd3e984edead82ade4824c1ed8c449207b65a2a` |
 | Validation data | `78c1a3ebd9d9af9bab6f1220fc35c220c934ee16c5e77547596226df31bbba0d` |
+
+## One-use forecast confirmation
+
+Use this endpoint only after the retained policy-development report records a
+miss and the cumulative ledger admits the full run. The forecast endpoint
+uses separate conditions 5300–5331. The controller keeps conditions 5200–5219.
+
+The standalone worker trains fresh seeds 201–205 with the archived long model
+recipe. It includes all five seeds, including those that miss validation
+readiness. For each seed it checks all five validation measurements through
+10,000 updates and takes the checkpoint with the lowest South polar response
+RMSE. It can reuse the model-only checkpoint from a completed matching
+long-recipe controller confirmation run. It verifies the original source archive
+and extracted files, both data hashes, the seed's recipe and the checkpoint.
+Before generation, it creates `forecast-confirmation-v1/FROZEN.json` once.
+This file records every selected checkpoint checksum and the evaluator source
+checksums. An interruption after this point spends the evaluation. Keep the
+partial files and record the failure.
+
+Use the original v1 CPU container setup, package pins, source ConfigMap and
+results volume. Mount `dreamer_forecast_confirmation.py` and
+`dreamer_control_forecast.py` from the same fixed evaluator commit in a separate
+read-only directory at `/forecast-code`. Record that commit and both file
+checksums in the launch record. After the original archive is extracted, run
+this command from the worker.
+
+```sh
+cd /runtime/repo
+PYTHONPATH=src:. python -u /forecast-code/dreamer_forecast_confirmation.py \
+  --archive /source/source.tar.gz --base /results/mars-dreamer-ctrl-v1
+```
+
+One worker uses two CPU cores and zero GPUs. The two original long runs took
+310.87 and 678.11 seconds. Use 678.12 seconds for each of five seeds. The
+original meter measured 67.492 seconds for one four-schedule condition and
+1.808 seconds to score eight conditions. The projection uses 32 generations
+and five passes over 32 conditions. This gives 3.11 CPU core-hours before
+startup. A 1.5 multiplier and 300 seconds for one startup give an admission
+estimate of **4.83 CPU core-hours**. Use the larger observed startup if the
+ledger requires it. Charge actual allocated time when the worker finishes.
+
+Each forecast uses the reset observation and twelve applied actions. The
+scorer compares its paired heated and zero-heating forecasts with the
+simulator's matched response. The primary comparison is the gain over the
+training-only linear recurrence, `1 − pooled model RMSE / pooled linear RMSE`.
+Pooling gives equal weight to every seed, condition, schedule and ten-sol
+boundary, with the original South polar area weights. The pass criteria are a
+gain of at least 10% and a positive lower bound on the 95% interval. The
+percentile bootstrap uses 10,000 draws from random seed 6100. Each draw
+resamples five model seeds and 32 condition IDs independently, with replacement.
+All sampled model seeds use the same sampled conditions. All schedules and
+forecast boundaries stay together within a condition.
+
+The PVC report gives pooled and per-seed response, full-field temperature
+and integrated reward errors. Temperature uses persistence and reward uses the
+training-only linear comparator. Separate files retain errors for each
+condition at all twelve boundaries and the zero-response and zero-reward
+comparisons. These results measure forecasts under the simulator's four
+heating schedules.
