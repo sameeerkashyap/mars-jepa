@@ -111,6 +111,27 @@ def test_cost_import_once_admission_and_manifest_constraints(tmp_path):
         study.import_previous()
 
 
+def test_manifest_passes_validated_configuration_to_worker(tmp_path):
+    import json
+    import subprocess
+    from scripts.pilot.dreamer_control import CONFIG, DreamerControlStudy, digest
+
+    config = dict(json.loads(CONFIG.read_text()), paired_response_weight=1.)
+    custom = tmp_path/'custom.json'
+    custom.write_text(json.dumps(config))
+    study = DreamerControlStudy(tmp_path/'study', 'fixture', previous_ledger(tmp_path), custom)
+    study.import_previous()
+    study.state.update(source_sha256='a'*64, configmap='fixture')
+    _, manifest = study.manifest(('meter', 'base', 101, 12, 'cpu'))
+    script = manifest['spec']['template']['spec']['containers'][0]['args'][0]
+    worker = script[script.index('exec python -u -m scripts.pilot.dreamer_control_worker'):]
+    # Read the worker's config argument without running its training stages.
+    probe = worker.replace('python -u -m scripts.pilot.dreamer_control_worker',
+                           """sh -c 'cat "$3"' probe""", 1)
+    delivered = json.loads(subprocess.check_output(['sh', '-c', probe], text=True))
+    assert digest(delivered) == study.state['config_sha256']
+
+
 def test_readiness_failure_finishes_without_actor_or_test(tmp_path):
     from scripts.pilot.dreamer_control import DreamerControlStudy
     executed = []
@@ -155,6 +176,30 @@ def test_simple_model_controller_uses_training_weights_and_respects_heat():
     assert len(plan) == 12 and all(0 <= h <= 10 for h in plan)
     assert sum(plan)*10 <= 300+1e-5
     assert 1.5 < np.mean(plan) < 3
+
+
+@pytest.mark.parametrize('mode', ['actor', 'confirm'])
+def test_paired_pretraining_requires_weight_in_selected_recipe(tmp_path, monkeypatch, mode):
+    from argparse import Namespace
+    from scripts.pilot.dreamer_control_worker import execute
+
+    monkeypatch.setenv('MARSWORLD_RECIPE', '{"learning_rate": 0.00004, "horizon": 3}')
+    args = Namespace(mode=mode, rung=12, base=tmp_path)
+    with pytest.raises(ValueError, match='recipe'):
+        execute(args, {'paired_response_weight': 1.})
+
+
+def test_meter_reports_loss_from_the_paired_update_it_timed(tmp_path):
+    import json
+    from argparse import Namespace
+    from scripts.pilot.dreamer_control import CONFIG
+    from scripts.pilot.dreamer_control_worker import execute
+
+    torch.set_num_threads(2)
+    config = dict(json.loads(CONFIG.read_text()), paired_response_weight=1.)
+    report = execute(Namespace(mode='meter', out=tmp_path, source='fixture'), config)
+    assert report['last_model_update_loss']['loss_paired_response'] > 0
+    assert report['model_update_seconds'] > 0
 
 
 def test_worker_recovery_and_final_freeze_are_checked_before_any_test_outcome(tmp_path, monkeypatch):

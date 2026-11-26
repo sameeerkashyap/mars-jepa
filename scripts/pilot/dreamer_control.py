@@ -163,8 +163,9 @@ class DreamerControlStudy(Study):
         script = script[:script.index('exec python -u -m scripts.pilot.small_study')]
         script = 'mkdir -p /runtime/tmp /runtime/cache "'+output+'"\n'+script
         script += (f'exec python -u -m scripts.pilot.dreamer_control_worker {mode} '
-                   f'--config data/specification/pilot/dreamer_control.json --base {base} '
-                   f'--out {output} --variant {variant} --seed {seed} --rung {rung}\n')
+                   f'--config /dev/stdin --base {base} '
+                   f"--out {output} --variant {variant} --seed {seed} --rung {rung} <<'PILOT_CONFIG'\n"
+                   f'{json.dumps(self.spec, allow_nan=False)}\nPILOT_CONFIG\n')
         container['args'][0] = script
         return name, manifest
 

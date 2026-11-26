@@ -35,6 +35,7 @@ def paired_response_loss(learner, reset, actions, target_kelvin, band, weights):
     state = carry['state'].expand(2, -1)
     belief = carry['belief'].expand(2, -1)
     prior = learner.world_model[1].rssm_prior.module
+    actions = torch.as_tensor(actions, dtype=torch.float32)
     responses = []
     for action in torch.stack((actions, torch.full_like(actions, -1)), dim=1):
         logits, belief = prior._belief_and_logits(state, belief, action)

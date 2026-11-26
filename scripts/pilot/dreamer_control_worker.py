@@ -160,12 +160,28 @@ def datasets(base, rung, *, include_train_manifest=False):
     return (*data, train_manifest) if include_train_manifest else data
 
 
-def train_stage(args, config):
+def paired_weight(config):
     weight = config.get('paired_response_weight', 0.)
-    selected = json.loads(os.environ.get('MARSWORLD_RECIPE', '{}'))
     if not np.isfinite(weight) or weight < 0:
         raise ValueError('paired_response_weight must be finite and nonnegative')
-    if args.mode != 'model' and selected.get('paired_response_weight', weight) != weight:
+    return weight
+
+
+def model_updates(learner, steps, manifest, episodes, band, area_weights, response_weight):
+    if response_weight:
+        pairs = matched_training_pairs(manifest, episodes, band)
+        area = torch.as_tensor(area_weights, dtype=torch.float32)
+    for step in steps:
+        auxiliary = None
+        if response_weight:
+            auxiliary = response_weight * paired_response_loss(learner, *pairs[step % len(pairs)], band, area)
+        yield learner.update(model_only=True, paired_response_loss=auxiliary)
+
+
+def train_stage(args, config):
+    weight = paired_weight(config)
+    selected = json.loads(os.environ.get('MARSWORLD_RECIPE', '{}'))
+    if args.mode != 'model' and selected.get('paired_response_weight', 0.) != weight:
         raise ValueError('selected recipe and configuration disagree on paired_response_weight')
     hashes, training, validation, train_manifest = datasets(args.base, args.rung, include_train_manifest=True)
     rate = config['model_learning_rates'][args.variant] if args.mode == 'model' else selected['learning_rate']
@@ -188,18 +204,12 @@ def train_stage(args, config):
                       resolved_learner_config=asdict(learner.config))
     env = ClimateVectorEnv()
     band, weights = env.task.band, env.task.grid.w[env.task.band]
-    if weight:
-        pairs = matched_training_pairs(train_manifest, training, band)
-        area = torch.as_tensor(weights, dtype=torch.float32)
     start = time.perf_counter()
     initial_states = {}
     model_checkpoints = config['model_checkpoints']
     # Every confirmation is a fresh initialization, including model and behavior.
-    for step in range(driver['model_updates'], model_checkpoints[-1]):
-        auxiliary = None
-        if weight:
-            auxiliary = weight * paired_response_loss(learner, *pairs[step % len(pairs)], band, area)
-        loss = learner.update(model_only=True, paired_response_loss=auxiliary)
+    steps = range(driver['model_updates'], model_checkpoints[-1])
+    for loss in model_updates(learner, steps, train_manifest, training, band, weights, weight):
         driver['model_updates'] += 1
         if driver['model_updates'] in model_checkpoints:
             metrics = forecast_validation(learner, training, validation, band, weights)
@@ -251,19 +261,22 @@ def train_stage(args, config):
 
 
 def meter(args, config):
+    weight = paired_weight(config)
     train_dir, val_dir = args.out/'meter-train', args.out/'meter-validation'
     train = generate_dataset(train_dir, split='train', condition_seeds=[5000], allocated_cpu_cores=2)
     validation = generate_dataset(val_dir, split='validation', condition_seeds=[5100], allocated_cpu_cores=2)
-    _, episodes = load_dataset(train_dir, split='train')
+    train_manifest, episodes = load_dataset(train_dir, split='train')
     _, validation_episodes = load_dataset(val_dir, split='validation')
     learner = new_learner(config, 101, config['model_learning_rates']['base'])
     for episode in episodes:
         learner.add_episode(**episode['policy'])
+    forecast_env = ClimateVectorEnv()
+    band = forecast_env.task.band
+    weights = forecast_env.task.grid.w[band]
     times = {}
     started = time.perf_counter()
-    for _ in range(12):
-        learner.update(model_only=True)
-    times['model_update_seconds'] = (time.perf_counter()-started)/12
+    losses = list(model_updates(learner, range(12), train_manifest, episodes, band, weights, weight))
+    times['model_update_seconds'] = (time.perf_counter()-started)/len(losses)
     # Compatibility behavior updates use synthetic vectors, never climate episodes.
     synthetic = new_learner(config, 103, config['model_learning_rates']['base'])
     rng = np.random.default_rng(103)
@@ -279,10 +292,8 @@ def meter(args, config):
     for _ in range(12):
         synthetic.update()
     times['behavior_update_seconds'] = (time.perf_counter()-started)/12
-    forecast_env = ClimateVectorEnv()
     started = time.perf_counter()
-    forecast_validation(learner, episodes, validation_episodes, forecast_env.task.band,
-                        forecast_env.task.grid.w[forecast_env.task.band])
+    forecast_validation(learner, episodes, validation_episodes, band, weights)
     times['forecast_validation_seconds'] = 8*(time.perf_counter()-started)
     started = time.perf_counter()
     learner.collect_episode(ClimateVectorEnv(), seed=5000)
@@ -295,7 +306,8 @@ def meter(args, config):
     if expected != observed or cursor['seed_cursor'] != 1 or any(
             not torch.equal(a, b) for a, b in zip(synthetic.loss.state_dict().values(), restored.loss.state_dict().values())):
         raise AssertionError('CPU recovery next update differs')
-    return dict(**times, generation_condition_seconds=max(train['cost']['wall_seconds'], validation['cost']['wall_seconds']),
+    return dict(**times, last_model_update_loss=losses[-1],
+                generation_condition_seconds=max(train['cost']['wall_seconds'], validation['cost']['wall_seconds']),
                 generator_cost_basis='two-core generation occupancy; Study.account also charges startup and full Job allocation',
                 allocated_cpu_cores=2, versions=versions(), recovery_next_update_exact=True, behavior_timing_data='synthetic 133-field vectors; no physical actor training')
 
@@ -370,8 +382,8 @@ def main():
     args = parser.parse_args()
     config = json.loads(args.config.read_text())
     if args.paired_response_weight is not None:
-        if args.mode in ('meter', 'data'):
-            parser.error('--paired-response-weight applies to model, actor, confirm and final')
+        if args.mode == 'data':
+            parser.error('--paired-response-weight applies to meter, model, actor, confirm and final')
         config['paired_response_weight'] = args.paired_response_weight
     torch.set_num_threads(2)
     args.out.mkdir(parents=True, exist_ok=True)

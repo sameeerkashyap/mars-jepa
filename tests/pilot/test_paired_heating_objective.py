@@ -38,7 +38,7 @@ def test_paired_loss_matches_open_loop_forecasts_and_trains_prior_and_decoder():
     learner = DreamerLearner(LearnerConfig(obs_dim=133, hidden_dim=16, belief_dim=16,
                                           categoricals=4, classes=4))
     reset = torch.linspace(-1, 1, 133)
-    actions = torch.zeros(12, 1)
+    actions = torch.zeros(12, 1, dtype=torch.float64)
     actions[5:] = -1.
     target = torch.arange(24, dtype=torch.float32).reshape(12, 2) / 10
     band, weights = [0, 2], torch.tensor([1., 3.])

@@ -122,7 +122,7 @@ checkpoints, raw data, curves and final trajectories remain on
 Use a persistent local process, with absolute paths to the previous state:
 
 ```sh
-rtk env PYTHONPATH=src:. TMPDIR="$PWD/.cache/pilot-tmp" \
+rtk proxy env PYTHONPATH=src:. TMPDIR="$PWD/.cache/pilot-tmp" \
   /path/to/.venv-torchrl/bin/python -u -m scripts.pilot.dreamer_control \
   --state-dir /absolute/project/outputs/pilot/mars-dreamer-ctrl-v1 \
   --previous-state /absolute/project/outputs/pilot/torchrl-comparison-v1/state.json
@@ -150,9 +150,10 @@ by cell area south of 60°S and averaged over all twelve boundaries.
 It updates the existing dynamics and decoder in the normal optimizer step.
 The total loss adds the weight times this error. The weight and data hashes
 are part of the recovery identity. Include the weight in the selected recipe
-and pass the same flag or JSON configuration to actor, confirmation and
-final workers. Actor and confirmation workers apply the extra loss during
-model pretraining. The original readiness gate controls behavior updates.
+and pass the same flag or JSON configuration to the meter, actor, confirmation
+and final workers. The meter times the paired model updates for cost
+estimates. Actor and confirmation workers apply the extra loss during model
+pretraining. The original readiness gate controls behavior updates.
 
 For each seed, use a fresh output directory on the results volume. Inside
 the pilot CPU container, set `SEED` to 101 or 102, `CONFIG` to the same
@@ -201,6 +202,12 @@ sequences. Each seed selects the lowest South response RMSE among updates
 500, 1,000, 2,000, 5,000 and 10,000. Both selected checkpoints must pass the
 original response, temperature and reward thresholds described above.
 
+Check the original Jobs from the host.
+
+```sh
+rtk kubectl --context nautilus -n razvanlab get jobs mars-dreamer-long-v1-s101 mars-dreamer-long-v1-s102
+```
+
 Use the original source archive with SHA-256
 `cd7b517b33fe18b26df2ffa4fd1a972540b6316ea3d180491b6dfff2b324c556`.
 Run these commands from its extracted root in the pilot's CPU environment.
@@ -211,8 +218,8 @@ and writes each seed's results in a separate reproduction directory.
 ```sh
 base=/results/mars-dreamer-ctrl-v1
 source_sha=cd7b517b33fe18b26df2ffa4fd1a972540b6316ea3d180491b6dfff2b324c556
-rtk proxy mkdir -p .cache
-rtk proxy python - <<'PY'
+mkdir -p .cache
+python - <<'PY'
 import json
 from pathlib import Path
 
@@ -221,7 +228,7 @@ config["model_checkpoints"] = [500, 1000, 2000, 5000, 10000]
 Path(".cache/dreamer-long-v1.json").write_text(json.dumps(config))
 PY
 for seed in 101 102; do
-  rtk proxy env PYTHONPATH=src:. python -u -m scripts.pilot.dreamer_control_worker model \
+  PYTHONPATH=src:. python -u -m scripts.pilot.dreamer_control_worker model \
     --config .cache/dreamer-long-v1.json --variant fast --seed "$seed" --rung 24 \
     --source "$source_sha" --base "$base" --out "$base/reproduction/long-s$seed" || exit 1
 done
